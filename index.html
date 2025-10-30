@@ -13,10 +13,17 @@
     (function() {
       var cdn = document.createElement('script');
       cdn.src = 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js';
-      cdn.onload = function() { window.__three_ready = true; };
+      cdn.onload = function() { 
+        window.__three_ready = true;
+        if (window.__three_initCallback) window.__three_initCallback();
+      };
       cdn.onerror = function() {
         var local = document.createElement('script');
         local.src = './lib/three.min.js';
+        local.onload = function() {
+          window.__three_ready = true;
+          if (window.__three_initCallback) window.__three_initCallback();
+        };
         document.head.appendChild(local);
       };
       document.head.appendChild(cdn);
@@ -26,38 +33,56 @@
 <body>
   <header class="top-nav">
     <div class="brand">Vixel</div>
-    <div class="actions">
-      <label class="file-input">
-        <input id="fileInput" type="file" accept="audio/*,video/*" />
-        <span>Upload Audio/Video</span>
-      </label>
-      <button id="playPauseBtn" aria-label="Play/Pause">Play</button>
-      <a class="docs-link" href="./docs/README.md" target="_blank" rel="noreferrer">Docs</a>
-    </div>
   </header>
 
   <aside class="left-nav">
     <div class="panel">
       <h3>Controls</h3>
       <div class="control">
-        <label for="density">Vector Density</label>
+        <div class="control-header">
+          <label for="density">Grid Size</label>
+          <span class="control-value" id="densityValue">40</span>
+        </div>
         <input id="density" type="range" min="10" max="80" value="40" />
+        <div class="control-desc">Field resolution (nodes per dimension)</div>
       </div>
       <div class="control">
-        <label for="oneByOne">One-by-one Spawn</label>
-        <input id="oneByOne" type="checkbox" checked />
+        <div class="control-header">
+          <label for="spawnRate">Spawn Rate (fallback)</label>
+          <span class="control-value" id="spawnRateValue">120</span>
+        </div>
+        <input id="spawnRate" type="range" min="1" max="600" step="1" value="120" />
       </div>
       <div class="control">
-        <label for="spawnRate">Spawn Rate</label>
-        <input id="spawnRate" type="range" min="1" max="300" step="1" value="120" />
+        <div class="control-header">
+          <label for="pathStep">Path Step</label>
+          <span class="control-value" id="pathStepValue">0.35</span>
+        </div>
+        <input id="pathStep" type="range" min="0.05" max="2" step="0.01" value="0.35" />
+        <div class="control-desc">Motion step size (lower = smoother)</div>
       </div>
       <div class="control">
-        <label for="osc">Oscillation</label>
+        <div class="control-header">
+          <label for="osc">Oscillation</label>
+          <span class="control-value" id="oscValue">0.00</span>
+        </div>
         <input id="osc" type="range" min="0" max="1" step="0.01" value="0" />
+        <div class="control-desc">Z-axis vertical oscillation intensity</div>
       </div>
       <div class="control">
-        <label for="trails">Trail Length</label>
+        <div class="control-header">
+          <label for="trails">Trail Length</label>
+          <span class="control-value" id="trailsValue">0.60</span>
+        </div>
         <input id="trails" type="range" min="0" max="1" step="0.01" value="0.6" />
+        <div class="control-desc">Trail persistence/fade rate</div>
+      </div>
+      <div class="control">
+        <div class="control-header">
+          <label for="kickSens">Kick/Bass Sensitivity</label>
+          <span class="control-value" id="kickSensValue">0.35</span>
+        </div>
+        <input id="kickSens" type="range" min="0" max="1" step="0.01" value="0.35" />
       </div>
       <div class="control">
         <label for="colorPreset">Color Preset</label>
@@ -68,49 +93,105 @@
           <option value="mono">Mono</option>
         </select>
       </div>
-      <div class="control">
-        <label for="kickSens">Kick/Bass Sensitivity</label>
-        <input id="kickSens" type="range" min="0" max="1" step="0.01" value="0.35" />
+    </div>
+  </aside>
+
+  <aside class="right-nav">
+    <div class="panel">
+      <h3>Track</h3>
+      <div class="player-controls-vertical">
+        <button id="playPauseBtn" class="play-pause-btn" aria-label="Play/Pause">
+          <svg id="playIcon" width="20" height="20" viewBox="0 0 16 16" fill="none">
+            <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
+          </svg>
+          <svg id="pauseIcon" width="20" height="20" viewBox="0 0 16 16" fill="none" style="display: none;">
+            <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
+            <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
+          </svg>
+        </button>
+        <div class="track-info-vertical">
+          <div id="trackName" class="track-name">No track loaded</div>
+          <div class="time-controls">
+            <span id="currentTime" class="time-display">0:00</span>
+            <input type="range" id="timeSlider" class="time-slider" min="0" max="100" value="0" />
+            <span id="duration" class="time-display">0:00</span>
+          </div>
+        </div>
+        <div class="drop-zone-container" id="dropZone">
+          <input id="fileInput" type="file" accept="audio/*,video/*" />
+          <div class="drop-zone-content">
+            <svg class="drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="drop-text">Drag & drop audio/video here</p>
+            <p class="drop-or">or</p>
+            <button class="drop-upload-btn" type="button">Browse Files</button>
+          </div>
+        </div>
       </div>
       <hr />
       <h3>View</h3>
       <div class="control">
-        <label for="mouseOrbit">Mouse Orbit</label>
-        <input id="mouseOrbit" type="checkbox" checked />
+        <label for="mouseOrbit" class="checkbox-label">
+          <input id="mouseOrbit" type="checkbox" checked />
+          <span>Mouse Orbit</span>
+        </label>
       </div>
       <div class="control">
-        <label for="showPlane">Show Plane/Grid</label>
-        <input id="showPlane" type="checkbox" checked />
+        <label for="showPlane" class="checkbox-label">
+          <input id="showPlane" type="checkbox" checked />
+          <span>Show Plane/Grid</span>
+        </label>
       </div>
       <div class="control">
-        <label for="showPlane2">Show Perpendicular Plane</label>
-        <input id="showPlane2" type="checkbox" />
+        <label for="showPlane2" class="checkbox-label">
+          <input id="showPlane2" type="checkbox" checked />
+          <span>Show Perpendicular Plane</span>
+        </label>
       </div>
       <div class="control">
-        <label for="showAxes">Show Axes</label>
-        <input id="showAxes" type="checkbox" checked />
+        <label for="showAxes" class="checkbox-label">
+          <input id="showAxes" type="checkbox" checked />
+          <span>Show Axes</span>
+        </label>
       </div>
       <div class="control">
-        <label for="showTrails">Show Line Trails</label>
-        <input id="showTrails" type="checkbox" checked />
+        <label for="showTrails" class="checkbox-label">
+          <input id="showTrails" type="checkbox" checked />
+          <span>Show Line Trails</span>
+        </label>
       </div>
       <div class="control">
-        <label for="spinX">Auto Spin X</label>
+        <div class="control-header">
+          <label for="spinX">Auto Spin X</label>
+          <span class="control-value" id="spinXValue">0.00</span>
+        </div>
         <input id="spinX" type="range" min="-2" max="2" step="0.01" value="0" />
       </div>
       <div class="control">
-        <label for="spinY">Auto Spin Y</label>
+        <div class="control-header">
+          <label for="spinY">Auto Spin Y</label>
+          <span class="control-value" id="spinYValue">0.00</span>
+        </div>
         <input id="spinY" type="range" min="-2" max="2" step="0.01" value="0" />
       </div>
       <div class="control">
-        <label for="spinZ">Auto Spin Z</label>
+        <div class="control-header">
+          <label for="spinZ">Auto Spin Z</label>
+          <span class="control-value" id="spinZValue">0.00</span>
+        </div>
         <input id="spinZ" type="range" min="-2" max="2" step="0.01" value="0" />
       </div>
     </div>
   </aside>
 
   <main class="stage">
-    <div id="dropZone" class="drop-zone" aria-label="Drop audio/video here">Drop audio/video here</div>
+    <div class="camera-position" aria-hidden="true">
+      <div class="label">Camera</div>
+      <div class="value" id="cameraPosition">X: 0.00, Y: 0.00, Z: 0.00</div>
+    </div>
     <div class="axis-legend" aria-hidden="true">
       <span class="x">X</span>
       <span class="y">Y</span>
@@ -129,5 +210,3 @@
   <script src="./js/main.js"></script>
 </body>
 </html>
-
-

@@ -6,23 +6,41 @@
   let renderer, scene, camera, field;
   let canvasEl, world;
   let spin = { x: 0.0, y: 0.0, z: 0.0 };
-  let orbit = { enabled: true, dragging: false, lastX: 0, lastY: 0, velX: 0, velY: 0, damp: 0.92 };
+  let orbit = { enabled: true, dragging: false, lastX: 0, lastY: 0, phi: Math.PI / 4, theta: Math.PI / 4 };
   let camRadius = 10.0;
+
+  // Helper function to update camera position from spherical coordinates
+  function updateCameraPosition() {
+    const x = camRadius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+    const y = camRadius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+    const z = camRadius * Math.cos(orbit.phi);
+    camera.position.set(x, y, z);
+    camera.lookAt(0, 0, 0);
+  }
 
   function setupThree() {
     canvasEl = document.getElementById('stage');
+    if (!canvasEl) {
+      console.error('Canvas element not found!');
+      return;
+    }
+    
     renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.autoClear = false; // keep color buffer for trails fade
-    resize();
-
+    
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0f17);
 
-    camera = new THREE.PerspectiveCamera(55, canvasEl.clientWidth / canvasEl.clientHeight, 0.1, 100);
-    camera.position.set(0, -7.2, 6.4);
-    camera.lookAt(0, 0, 0);
-    camRadius = camera.position.length();
+    // Ensure canvas has dimensions before creating camera
+    const width = canvasEl.clientWidth || 800;
+    const height = canvasEl.clientHeight || 600;
+    renderer.setSize(width, height, false);
+    camera = new THREE.PerspectiveCamera(55, width / height || 1, 0.1, 100);
+    // Isometric view with Z up - matching the desired screenshot
+    camera.up.set(0, 0, 1);
+    // Initialize camera position using spherical coordinates
+    updateCameraPosition();
 
     const hemi = new THREE.HemisphereLight(0xaec6ff, 0x0b0f17, 0.8);
     scene.add(hemi);
@@ -53,22 +71,37 @@
     axes.name = 'vixel-axes-helper';
     world.add(axes);
 
-    // Perpendicular plane (YZ), hidden by default
+    // Perpendicular plane (YZ), visible by default
     const grid2 = new THREE.GridHelper(18, 24, 0x324155, 0x243041);
     grid2.material.transparent = true;
     grid2.material.opacity = 0.25;
     grid2.rotation.z = Math.PI / 2; // YZ plane at x=0
     grid2.position.x = 0;
     grid2.name = 'vixel-grid-plane-2';
-    grid2.visible = false;
+    grid2.visible = true;
     world.add(grid2);
+    
+    // Initial render to show the scene immediately
+    // Since autoClear is false, we need to manually clear before first render
+    renderer.autoClearColor = true;
+    renderer.clear();
+    renderer.render(scene, camera);
+    renderer.autoClearColor = false; // restore for trails
   }
 
   function resize() {
-    const w = canvasEl?.clientWidth || window.innerWidth;
-    const h = canvasEl?.clientHeight || window.innerHeight;
-    renderer?.setSize(w, h, false);
-    if (camera) {
+    if (!canvasEl) return;
+    const w = canvasEl.clientWidth || window.innerWidth;
+    const h = canvasEl.clientHeight || window.innerHeight;
+    if (w === 0 || h === 0) {
+      // Canvas not sized yet, try again on next frame
+      requestAnimationFrame(resize);
+      return;
+    }
+    if (renderer) {
+      renderer.setSize(w, h, false);
+    }
+    if (camera && h > 0) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
@@ -76,13 +109,28 @@
 
   // Band visibility removed; particles are colored by originating band automatically
 
+  // Helper function to update value displays
+  function updateValueDisplay(id, value, decimals = 2) {
+    const display = document.getElementById(id);
+    if (display) {
+      if (decimals === 0) {
+        display.textContent = Math.round(value);
+      } else {
+        display.textContent = value.toFixed(decimals);
+      }
+      return true;
+    }
+    return false;
+  }
+
   function setupControls() {
     const density = document.getElementById('density');
-    const oneByOne = document.getElementById('oneByOne');
     const spawnRate = document.getElementById('spawnRate');
+    const pathStep = document.getElementById('pathStep');
     const osc = document.getElementById('osc');
     const trails = document.getElementById('trails');
     const preset = document.getElementById('colorPreset');
+    const kickSens = document.getElementById('kickSens');
     // band visibility UI removed
     const mouseOrbit = document.getElementById('mouseOrbit');
     const showPlane = document.getElementById('showPlane');
@@ -95,11 +143,57 @@
     const zoomIn = document.getElementById('zoomIn');
     const zoomOut = document.getElementById('zoomOut');
 
-    if (density) density.addEventListener('input', () => field.setDensity(Number(density.value)));
-    if (oneByOne) oneByOne.addEventListener('change', () => field.setOneByOne(oneByOne.checked));
-    if (spawnRate) spawnRate.addEventListener('input', () => field.setSpawnRate(Number(spawnRate.value)));
-    if (osc) osc.addEventListener('input', () => field.setOscillation(Number(osc.value)));
-    if (trails) trails.addEventListener('input', () => field.setTrailStrength(Number(trails.value)));
+    if (density) {
+      density.addEventListener('input', () => {
+        const val = Number(density.value);
+        updateValueDisplay('densityValue', val, 0);
+        field.setDensity(val);
+        // Re-add mesh and edges to world after density change
+        if (world) {
+          const mesh = field.getObject3D();
+          if (mesh && !mesh.parent) {
+            world.add(mesh);
+          }
+          if (field.edgeLines && !field.edgeLines.parent) {
+            world.add(field.edgeLines);
+          }
+        }
+      });
+    }
+    if (spawnRate) {
+      spawnRate.addEventListener('input', () => {
+        const val = Number(spawnRate.value);
+        updateValueDisplay('spawnRateValue', val, 0);
+        field.setSpawnRate(val);
+      });
+    }
+    if (pathStep) {
+      pathStep.addEventListener('input', () => {
+        const val = Number(pathStep.value);
+        updateValueDisplay('pathStepValue', val, 2);
+        // Note: setPathStep not currently implemented in VectorField
+      });
+    }
+    if (osc) {
+      osc.addEventListener('input', () => {
+        const val = Number(osc.value);
+        updateValueDisplay('oscValue', val, 2);
+        field.setOscillation(val);
+      });
+    }
+    if (trails) {
+      trails.addEventListener('input', () => {
+        const val = Number(trails.value);
+        updateValueDisplay('trailsValue', val, 2);
+        field.setTrailStrength(val);
+      });
+    }
+    if (kickSens) {
+      kickSens.addEventListener('input', () => {
+        const val = Number(kickSens.value);
+        updateValueDisplay('kickSensValue', val, 2);
+      });
+    }
     if (preset) preset.addEventListener('change', () => field.setColorPreset(preset.value));
     if (mouseOrbit) mouseOrbit.addEventListener('change', () => { orbit.enabled = mouseOrbit.checked; });
     if (showPlane) showPlane.addEventListener('change', () => {
@@ -118,26 +212,87 @@
       const plane2 = world.getObjectByName('vixel-grid-plane-2');
       if (plane2) plane2.visible = showPlane2.checked;
     });
-    if (spinX) spinX.addEventListener('input', () => { spin.x = Number(spinX.value) * 0.5; });
-    if (spinY) spinY.addEventListener('input', () => { spin.y = Number(spinY.value) * 0.5; });
-    if (spinZ) spinZ.addEventListener('input', () => { spin.z = Number(spinZ.value) * 0.5; });
+    if (spinX) {
+      spinX.addEventListener('input', () => {
+        const val = Number(spinX.value);
+        updateValueDisplay('spinXValue', val, 2);
+        spin.x = val * 0.5;
+      });
+    }
+    if (spinY) {
+      spinY.addEventListener('input', () => {
+        const val = Number(spinY.value);
+        updateValueDisplay('spinYValue', val, 2);
+        spin.y = val * 0.5;
+      });
+    }
+    if (spinZ) {
+      spinZ.addEventListener('input', () => {
+        const val = Number(spinZ.value);
+        updateValueDisplay('spinZValue', val, 2);
+        spin.z = val * 0.5;
+      });
+    }
     const applyZoom = (delta) => {
+      if (!camera) return;
       camRadius = Math.max(3, Math.min(40, camRadius * (1 + delta)));
-      const dir = camera.position.clone().normalize();
-      camera.position.copy(dir.multiplyScalar(camRadius));
-      camera.updateProjectionMatrix();
+      updateCameraPosition();
     };
     if (zoomIn) zoomIn.addEventListener('click', () => applyZoom(-0.1));
     if (zoomOut) zoomOut.addEventListener('click', () => applyZoom(0.1));
-    canvasEl.addEventListener('wheel', (e) => { e.preventDefault(); applyZoom(e.deltaY > 0 ? 0.1 : -0.1); }, { passive: false });
+    if (canvasEl) {
+      canvasEl.addEventListener('wheel', (e) => { 
+        e.preventDefault(); 
+        applyZoom(e.deltaY > 0 ? 0.1 : -0.1); 
+      }, { passive: false });
+    }
 
-    // Initialize defaults
-    if (density) field.setDensity(Number(density.value));
-    if (oneByOne) field.setOneByOne(oneByOne.checked);
-    if (spawnRate) field.setSpawnRate(Number(spawnRate.value));
-    if (osc) field.setOscillation(Number(osc.value));
-    if (trails) field.setTrailStrength(Number(trails.value));
+    // Initialize defaults and value displays
+    if (density) {
+      const val = Number(density.value);
+      updateValueDisplay('densityValue', val, 0);
+      field.setDensity(val);
+    }
+    if (spawnRate) {
+      const val = Number(spawnRate.value);
+      updateValueDisplay('spawnRateValue', val, 0);
+      field.setSpawnRate(val);
+    }
+    if (pathStep) {
+      const val = Number(pathStep.value);
+      updateValueDisplay('pathStepValue', val, 2);
+      // Note: setPathStep not currently implemented in VectorField
+    }
+    if (osc) {
+      const val = Number(osc.value);
+      updateValueDisplay('oscValue', val, 2);
+      field.setOscillation(val);
+    }
+    if (trails) {
+      const val = Number(trails.value);
+      updateValueDisplay('trailsValue', val, 2);
+      field.setTrailStrength(val);
+    }
+    if (kickSens) {
+      const val = Number(kickSens.value);
+      updateValueDisplay('kickSensValue', val, 2);
+    }
     if (preset) field.setColorPreset(preset.value);
+    if (spinX) {
+      const val = Number(spinX.value);
+      updateValueDisplay('spinXValue', val, 2);
+      spin.x = val * 0.5;
+    }
+    if (spinY) {
+      const val = Number(spinY.value);
+      updateValueDisplay('spinYValue', val, 2);
+      spin.y = val * 0.5;
+    }
+    if (spinZ) {
+      const val = Number(spinZ.value);
+      updateValueDisplay('spinZValue', val, 2);
+      spin.z = val * 0.5;
+    }
     if (showTrails) field.setTrailsVisible(showTrails.checked);
     if (showPlane) {
       const plane = world.getObjectByName('vixel-grid-plane');
@@ -154,23 +309,44 @@
       if (legend) legend.style.display = showAxes.checked ? 'flex' : 'none';
     }
 
-    // Mouse orbit events
-    canvasEl.addEventListener('pointerdown', (e) => {
-      if (!orbit.enabled) return;
-      orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY;
-    });
-    window.addEventListener('pointermove', (e) => {
-      if (!orbit.dragging || !orbit.enabled) return;
-      const dx = e.clientX - orbit.lastX; const dy = e.clientY - orbit.lastY;
-      orbit.lastX = e.clientX; orbit.lastY = e.clientY;
-      orbit.velY += dx * 0.002; // yaw
-      orbit.velX += dy * 0.002; // pitch
-    });
-    window.addEventListener('pointerup', () => { orbit.dragging = false; });
+    // Mouse orbit events - orbit camera around origin
+    if (!canvasEl) {
+      console.error('Canvas element not found for mouse orbit');
+    } else {
+      canvasEl.addEventListener('pointerdown', (e) => {
+        if (!orbit.enabled || !camera) return;
+        e.preventDefault();
+        orbit.dragging = true; 
+        orbit.lastX = e.clientX;
+        orbit.lastY = e.clientY;
+        canvasEl.style.cursor = 'grabbing';
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!orbit.dragging || !orbit.enabled || !camera) return;
+        e.preventDefault();
+        const dx = (e.clientX - orbit.lastX) * 0.005; // horizontal rotation (theta)
+        const dy = (e.clientY - orbit.lastY) * 0.005; // vertical rotation (phi)
+        orbit.lastX = e.clientX; 
+        orbit.lastY = e.clientY;
+        
+        orbit.theta -= dx; // rotate around Z-axis
+        orbit.phi = Math.max(0.1, Math.min(Math.PI - 0.1, orbit.phi - dy)); // clamp vertical angle
+        
+        updateCameraPosition();
+      });
+      window.addEventListener('pointerup', (e) => { 
+        orbit.dragging = false; 
+        if (canvasEl) canvasEl.style.cursor = 'grab';
+      });
+    }
   }
 
   function animate() {
     requestAnimationFrame(animate);
+    
+    // Safety check: ensure scene is initialized
+    if (!scene || !camera || !renderer || !field) return;
+    
     const dt = 1 / 60;
     const bands = window.VixelAudio.getBands();
     const kick = window.VixelAudio.getKick();
@@ -184,18 +360,27 @@
       world.rotation.z += spin.z * dt;
     }
 
-    // Mouse momentum
-    if (orbit.enabled) {
-      world.rotation.x += orbit.velX;
-      world.rotation.y += orbit.velY;
-      orbit.velX *= orbit.damp;
-      orbit.velY *= orbit.damp;
+    // Camera orbit is handled in real-time in pointermove, no momentum needed
+
+    // Update camera position display
+    if (camera) {
+      const pos = camera.position;
+      const posDisplay = document.getElementById('cameraPosition');
+      if (posDisplay) {
+        posDisplay.textContent = `X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}`;
+      }
     }
 
     renderer.render(scene, camera);
   }
 
   function init() {
+    // Wait for Three.js to be loaded before initializing
+    if (typeof THREE === 'undefined' || !window.__three_ready) {
+      window.__three_initCallback = init;
+      return;
+    }
+    
     window.VixelAudio.init();
     setupThree();
     setupControls();
@@ -203,7 +388,14 @@
   }
 
   window.addEventListener('resize', resize);
-  window.addEventListener('load', init);
+  window.addEventListener('load', function() {
+    // Check if Three.js is already loaded, otherwise wait for callback
+    if (typeof THREE !== 'undefined' && window.__three_ready) {
+      init();
+    } else {
+      window.__three_initCallback = init;
+    }
+  });
 })();
 
 

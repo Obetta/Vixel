@@ -17,6 +17,13 @@ window.VixelField = (function () {
       // bandVisibility removed; all bands contribute
       this.setColorPreset('aurora');
 
+      // Targets for smooth transitions (UI changes ease toward these)
+      this._targetOsc = this.oscIntensity;
+      this._targetTrails = this.trailStrength;
+      this._targetSpawnRate = 120;
+      this._prevColorLerp = null;
+      this._colorBlendT = 1; // 0..1 crossfade progress
+
       this.gridSize = 40; // used to derive default count
       this.count = this.gridSize * this.gridSize; // default ~1600 particles
       this.bounds = 9.0; // cube half-extent
@@ -29,9 +36,11 @@ window.VixelField = (function () {
       this.edgeGeom = null;
       this.edgeLines = null;
       this.edgeCount = 0;
+      this.lastSpawnPos = new THREE.Vector3(0, 0, 0);
       this.active = 0; // progressive spawn count
       this.spawnRate = 120; // particles per second baseline
-      this.oneByOne = false;
+      this.oneByOne = true; // always on, creates graph
+      this._lastBeatTime = undefined; // track BPM cadence
       this._buildInstanced();
       this.active = 0; // restart progressive reveal on density change
       this._buildTrailPass();
@@ -42,32 +51,54 @@ window.VixelField = (function () {
       if (size === this.gridSize) return;
       this.gridSize = size;
       this.count = size * size;
+      // Reset properly on density change
+      this.active = 0;
+      this.edgeCount = 0;
       if (this.mesh) {
-        this.scene.remove(this.mesh);
+        // Remove from whatever parent it's in (world or scene)
+        if (this.mesh.parent) {
+          this.mesh.parent.remove(this.mesh);
+        }
         this.mesh.geometry.dispose();
         this.mesh.material.dispose();
+        this.mesh = null;
+      }
+      // Rebuild edge geometry
+      if (this.edgeLines) {
+        // Remove from whatever parent it's in (world or scene)
+        if (this.edgeLines.parent) {
+          this.edgeLines.parent.remove(this.edgeLines);
+        }
+        this.edgeLines.geometry.dispose();
+        this.edgeLines.material.dispose();
+        this.edgeGeom = null;
+        this.edgeLines = null;
       }
       this._buildInstanced();
     }
 
-    setOscillation(v) { this.oscIntensity = clamp(Number(v), 0, 1); }
-    setTrailStrength(v) { this.trailStrength = clamp(Number(v), 0, 1); }
-    setColorPreset(preset) { this.colorLerp = createColorLerp(preset); }
+    setOscillation(v) { this._targetOsc = clamp(Number(v), 0, 1); }
+    setTrailStrength(v) { this._targetTrails = clamp(Number(v), 0, 1); }
+    setColorPreset(preset) {
+      this._prevColorLerp = this.colorLerp || createColorLerp(preset);
+      this.colorLerp = createColorLerp(preset);
+      this._colorBlendT = 0;
+    }
     getObject3D() { return this.mesh; }
     getTrailsObject3D() { return this.trailLines; }
     setTrailsVisible(v) { if (this.trailLines) this.trailLines.visible = !!v; }
-    setSpawnRate(v) { this.spawnRate = Math.max(1, Number(v) || 1); }
+    setSpawnRate(v) { this._targetSpawnRate = Math.max(1, Number(v) || 1); }
     setOneByOne(flag) { this.oneByOne = !!flag; }
 
     _buildInstanced() {
-      const geo = new THREE.OctahedronGeometry(0.06, 0); // small bright point-like shape
-      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.25, transparent: true });
+      const geo = new THREE.BoxGeometry(0.08, 0.08, 0.08); // white squares
+      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.5, transparent: false });
       this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
       this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this.mesh.instanceMatrix.needsUpdate = true;
       this.mesh.castShadow = false;
       this.mesh.receiveShadow = false;
-      this.scene.add(this.mesh);
+      // Don't add to scene here - let main.js add to world via getObject3D()
       this._initInstances();
       // Track band assignment per instance (-1 means unassigned)
       this.bandOf = new Int16Array(this.count);
@@ -121,7 +152,9 @@ window.VixelField = (function () {
       // Max edges = count - 1 (prev->curr), allocate full
       const edgePos = new Float32Array((cnt - 1) * 2 * 3);
       this.edgeGeom.setAttribute('position', new THREE.BufferAttribute(edgePos, 3));
-      const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+      const edgeColors = new Float32Array((cnt - 1) * 2 * 3);
+      this.edgeGeom.setAttribute('color', new THREE.BufferAttribute(edgeColors, 3));
+      const edgeMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 });
       this.edgeLines = new THREE.LineSegments(this.edgeGeom, edgeMat);
     }
 
@@ -152,6 +185,16 @@ window.VixelField = (function () {
       const t = this.clock.elapsedTime;
       const dummy = new THREE.Object3D();
 
+      // Smoothly move live parameters toward targets
+      const smooth = (cur, tgt, halfLifeSec) => tgt + (cur - tgt) * Math.pow(0.5, dt / halfLifeSec);
+      this.oscIntensity = smooth(this.oscIntensity, this._targetOsc, 0.25);
+      this.trailStrength = smooth(this.trailStrength, this._targetTrails, 0.25);
+      this.spawnRate = smooth(this.spawnRate, this._targetSpawnRate, 0.35);
+      if (this._prevColorLerp && this._colorBlendT < 1) {
+        this._colorBlendT = Math.min(1, this._colorBlendT + dt / 0.35);
+        if (this._colorBlendT >= 1) this._prevColorLerp = null;
+      }
+
       // Compute band weights (internal gamma)
       const weights = bands.map((v) => Math.pow(v, this.gamma));
       const low = (weights[0] + weights[1] * 0.6);
@@ -161,45 +204,98 @@ window.VixelField = (function () {
       const audioActive = !!(window.VixelAudio && window.VixelAudio.isPlaying && window.VixelAudio.isPlaying());
       const energy = audioActive ? energyRaw : 0;
 
-      // Progressive activation (swarm into view)
+      // Get beat data for audio-driven placement
+      const beatData = window.VixelAudio && window.VixelAudio.getBeat ? window.VixelAudio.getBeat() : null;
+      const beatEnergy = beatData ? beatData.overall : 0;
+
+      // Progressive activation - sync to BPM cadence + beat hits
       const prevActive = Math.floor(this.active);
+      let shouldSpawn = false;
+      
       if (energy > 0.02) {
-        const rate = this.oneByOne ? 1 : this.spawnRate * (0.3 + energy * 1.7);
-        this.active = Math.min(this.count, this.active + rate * dt);
+        if (beatData && beatData.bpm && beatData.bpm > 60) {
+          // Base spawn rate follows BPM cadence (60/BPM = seconds per beat)
+          const bpm = beatData.bpm;
+          const beatInterval = 60.0 / bpm; // seconds between beats
+          // Spawn once per beat interval (cadence)
+          if (this._lastBeatTime === undefined || (t - this._lastBeatTime) >= beatInterval - 0.05) {
+            shouldSpawn = true;
+            this._lastBeatTime = t;
+          }
+          // Also spawn immediately when any beat instrument hits
+          if (beatData.kick?.isHit || beatData.snare?.isHit || beatData.hihat?.isHit) {
+            shouldSpawn = true;
+            this._lastBeatTime = t; // reset cadence on instrument hit
+          }
+          if (shouldSpawn) {
+            // Spawn one node per beat hit or cadence tick
+            this.active = Math.min(this.count, this.active + 1);
+          }
+        } else {
+          // Fallback: use spawnRate if BPM not detected yet
+          this.active = Math.min(this.count, this.active + this.spawnRate * dt);
+        }
       } else {
         // hide when idle
         this.active = Math.max(0, this.active - this.spawnRate * 1.2 * dt);
       }
       const activeCount = Math.floor(this.active);
-      // Assign newly activated particles to perimeter positions and band colors
+      // Assign newly activated particles using audio analysis
       if (activeCount > prevActive) {
         for (let i = prevActive; i < activeCount; i++) {
-          // Determine dominant visible band now
+          // Determine dominant band for color assignment
           let dom = 0, domVal = -1;
           for (let b = 0; b < 8; b++) {
-            if (!this.bandVisibility[b]) continue;
             const v = weights[b];
             if (v > domVal) { domVal = v; dom = b; }
           }
           this.bandOf[i] = dom;
-          // Place along perimeter of XY plane (z near 0), param based on i
-          const u = (i % this.count) / this.count; // 0..1
-          const L = this.bounds * 2;
-          const perim = 8 * this.bounds; // conceptual perimeter units
-          let px = 0, py = 0;
-          const seg = Math.floor(u * 4);
-          const t = (u * 4) - seg;
+          // Audio-driven placement: position based on which instrument/band triggered spawn
           const half = this.bounds;
-          if (seg === 0) { px = -half + L * t; py = -half; }
-          else if (seg === 1) { px = half; py = -half + L * t; }
-          else if (seg === 2) { px = half - L * t; py = half; }
-          else { px = -half; py = half - L * t; }
+          let px, py, pz;
+          
+          if (beatData) {
+            // Position based on which instrument hit
+            if (beatData.kick?.isHit) {
+              // Kick/bass: negative X (left side)
+              px = mapRange(weights[0], 0, 1, -half * 0.8, -half * 0.3);
+              py = mapRange(weights[1], 0, 1, -half * 0.5, half * 0.5);
+              pz = mapRange(beatData.kick.level, 0, 1, -half * 0.5, half * 0.3);
+            } else if (beatData.snare?.isHit) {
+              // Snare: positive X (right side)
+              px = mapRange(weights[3], 0, 1, half * 0.3, half * 0.8);
+              py = mapRange(weights[2], 0, 1, -half * 0.5, half * 0.5);
+              pz = mapRange(beatData.snare.level, 0, 1, -half * 0.3, half * 0.5);
+            } else if (beatData.hihat?.isHit) {
+              // Hi-hat: upper Z
+              px = mapRange(weights[6] - weights[5], -1, 1, -half * 0.5, half * 0.5);
+              py = mapRange(weights[7], 0, 1, -half * 0.5, half * 0.5);
+              pz = mapRange(beatData.hihat.level, 0, 1, half * 0.4, half * 0.9);
+            } else {
+              // BPM cadence spawn (no instrument hit): use frequency analysis
+              const bassX = (weights[0] + weights[1]) / 2;
+              const trebleX = (weights[6] + weights[7]) / 2;
+              px = mapRange(bassX - trebleX, -1, 1, -half, half);
+              const midY = (weights[2] + weights[3] + weights[4]) / 3;
+              py = mapRange(midY, 0, 1, -half, half);
+              pz = mapRange(energy, 0, 1, -half * 0.5, half * 0.5);
+            }
+          } else {
+            // Fallback: frequency-based placement
+            px = mapRange(weights[0] - weights[7], -1, 1, -half, half);
+            py = mapRange((weights[2] + weights[3] + weights[4]) / 3, 0, 1, -half, half);
+            pz = mapRange(energy, 0, 1, -half, half);
+          }
+          // Add small noise for natural variation
+          const noiseScale = 0.12;
+          const pxFinal = clamp(px + (Math.random() - 0.5) * noiseScale * half, -half, half);
+          const pyFinal = clamp(py + (Math.random() - 0.5) * noiseScale * half, -half, half);
+          const pzFinal = clamp(pz + (Math.random() - 0.5) * noiseScale * half, -half, half);
           const j = i * 3;
-          const pz = 0;
-          this.positions[j] = px; this.positions[j + 1] = py; this.positions[j + 2] = pz;
-          this.prevPositions[j] = px; this.prevPositions[j + 1] = py; this.prevPositions[j + 2] = pz;
+          this.positions[j] = pxFinal; this.positions[j + 1] = pyFinal; this.positions[j + 2] = pzFinal;
+          this.prevPositions[j] = pxFinal; this.prevPositions[j + 1] = pyFinal; this.prevPositions[j + 2] = pzFinal;
           this.velocities[j] = 0; this.velocities[j + 1] = 0; this.velocities[j + 2] = 0;
-          // Add edge from previous node to this node
+          // Add edge from previous node to this node (graph structure)
           if (i > 0) {
             const k = (i - 1) * 6; // two vertices per edge
             const pj = (i - 1) * 3;
@@ -210,8 +306,13 @@ window.VixelField = (function () {
             posArr[k + 3] = this.positions[j];
             posArr[k + 4] = this.positions[j + 1];
             posArr[k + 5] = this.positions[j + 2];
-            this.edgeCount = i; // last written edge index
+            // White edges
+            const colArr = this.edgeGeom.attributes.color.array;
+            colArr[k] = 1; colArr[k + 1] = 1; colArr[k + 2] = 1;
+            colArr[k + 3] = 1; colArr[k + 4] = 1; colArr[k + 5] = 1;
+            this.edgeCount = i;
             this.edgeGeom.attributes.position.needsUpdate = true;
+            this.edgeGeom.attributes.color.needsUpdate = true;
           }
         }
       }
@@ -220,13 +321,23 @@ window.VixelField = (function () {
       const B = this.bounds;
       for (let i = 0; i < cnt; i++) {
         const j = i * 3;
+        // In one-by-one mode, freeze all active graph nodes (they don't move)
+        if (this.oneByOne && i < activeCount) {
+          dummy.position.set(this.positions[j], this.positions[j + 1], this.positions[j + 2]);
+          // White nodes
+          this.mesh.setColorAt?.(i, new THREE.Color(1, 1, 1));
+          const s = audioActive ? 0.8 : 0.8;
+          dummy.scale.setScalar(s);
+          dummy.updateMatrix();
+          this.mesh.setMatrixAt(i, dummy.matrix);
+          continue; // Skip motion update for graph nodes
+        }
+        // For inactive or swarm mode: apply motion
         let x = this.positions[j];
         let y = this.positions[j + 1];
         let z = this.positions[j + 2];
-        // Store previous
         this.prevPositions[j] = x; this.prevPositions[j + 1] = y; this.prevPositions[j + 2] = z;
 
-        // Noise flow field (curl-like approximation via gradients)
         const nx = this.perlin.noise3(x * 0.15 + t * 0.25, y * 0.12 - t * 0.22, z * 0.1);
         const ny = this.perlin.noise3(y * 0.16 - t * 0.21, z * 0.14 + t * 0.24, x * 0.11);
         const nz = this.perlin.noise3(z * 0.13 + t * 0.2, x * 0.1 - t * 0.18, y * 0.09);
@@ -234,29 +345,22 @@ window.VixelField = (function () {
         const flowX = (nx * 2 - 1) * flowBase * (0.2 + mid * 1.2);
         const flowY = (ny * 2 - 1) * flowBase * (0.2 + mid * 1.2);
         let flowZ = (nz * 2 - 1) * flowBase * (0.2 + mid * 1.2);
-        // Add explicit vertical drift so particles do not collapse to z≈0
         const verticalDrift = (Math.sin(t * 0.45 + x * 0.7) + Math.cos(t * 0.37 + y * 0.9)) * 0.12 * (0.3 + mid + hi);
         flowZ += verticalDrift;
 
-        // Radial push/pull + kick pulse + mild centering so particles don't live on walls
         const r = Math.max(0.0001, Math.sqrt(x * x + y * y + z * z));
         const rx = (x / r), ry = (y / r), rz = (z / r);
-        // Oscillatory radial (in/out) around 0 plus small center spring (-k*r)
         const radial = (this.radialAmp * Math.sin(t * 0.6 + r * 1.6)) - 0.18 * r + kick.level * 0.9 * (0.6 + low);
 
-        // High-frequency spin around Y axis (gives arcs)
         const spin = 0.6 * (0.3 + hi);
         const spinX = -y * spin * 0.02;
         const spinY = x * spin * 0.02;
 
-        // Integrate velocity, scaled by energy so idle is calm/near-still
-        // Freeze nodes when one-by-one mode is enabled to create a graph
-        const calm = (this.oneByOne ? 0.0 : (audioActive ? (0.05 + energy * 0.95) : 0.0));
+        const calm = audioActive ? (0.05 + energy * 0.95) : 0.0;
         let vx = this.velocities[j] * this.drag + (flowX + rx * radial * 0.02 + spinX) * calm;
         let vy = this.velocities[j + 1] * this.drag + (flowY + ry * radial * 0.02 + spinY) * calm;
         let vz = this.velocities[j + 2] * this.drag + (flowZ + rz * radial * 0.02) * calm;
 
-        // Integrate position then reflect at bounds (prevents teleport streaks)
         x = x + vx;
         y = y + vy;
         z = z + vz;
@@ -273,27 +377,9 @@ window.VixelField = (function () {
 
         dummy.position.set(x, y, z);
 
-        // Color/scale by amplitude at this point
+        // White nodes
+        this.mesh.setColorAt?.(i, new THREE.Color(1, 1, 1));
         const ampLocal = clamp(low * 0.9 + mid * 0.7 + hi * 0.5, 0, 1);
-        // Color: use band color if assigned, else gradient by amplitude
-        let rC, gC, bC;
-        const band = this.bandOf[i];
-        if (band >= 0) {
-          const bandColors = [
-            [0.95, 0.35, 0.35], // 1
-            [0.98, 0.58, 0.35], // 2
-            [0.98, 0.82, 0.35], // 3
-            [0.60, 0.90, 0.40], // 4
-            [0.35, 0.85, 0.95], // 5
-            [0.40, 0.55, 0.98], // 6
-            [0.68, 0.42, 0.98], // 7
-            [0.90, 0.90, 0.95]  // 8
-          ];
-          const c = bandColors[band]; rC = c[0]; gC = c[1]; bC = c[2];
-        } else {
-          const c = this.colorLerp(ampLocal); rC = c[0]; gC = c[1]; bC = c[2];
-        }
-        this.mesh.setColorAt?.(i, new THREE.Color(rC, gC, bC));
         let s = audioActive ? (0.6 + ampLocal * 1.6 + kick.level * 0.8) : 0.0;
         if (i > activeCount) s = 0; // not yet spawned
         dummy.scale.setScalar(s);
@@ -304,22 +390,23 @@ window.VixelField = (function () {
       this.mesh.instanceMatrix.needsUpdate = true;
       this.mesh.instanceColor && (this.mesh.instanceColor.needsUpdate = true);
 
-      // Update line segments positions
-      if (this.trailGeom) {
+      // Update line segments positions (only for non-graph nodes, graph uses permanent edges)
+      if (this.trailGeom && !this.oneByOne) {
         const arr = this.trailGeom.attributes.position.array;
-        for (let i = 0; i < cnt; i++) {
+        for (let i = activeCount; i < cnt; i++) {
           const j = i * 3;
           const k = i * 6; // two vertices per segment
-          // start = previous
           arr[k] = this.prevPositions[j];
           arr[k + 1] = this.prevPositions[j + 1];
           arr[k + 2] = this.prevPositions[j + 2];
-          // end = current
           arr[k + 3] = this.positions[j];
           arr[k + 4] = this.positions[j + 1];
           arr[k + 5] = this.positions[j + 2];
         }
         this.trailGeom.attributes.position.needsUpdate = true;
+      } else if (this.trailLines) {
+        // Hide motion blur trails when in graph mode
+        this.trailLines.visible = false;
       }
     }
 
