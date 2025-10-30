@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vixel Starter</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="description" content="Audio-reactive 3D vector field starter powered by Three.js" />
+  <script>
+    // Prefer CDN for Three.js with local fallback
+    (function() {
+      var cdn = document.createElement('script');
+      cdn.src = 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js';
+      cdn.onload = function() { window.__three_ready = true; };
+      cdn.onerror = function() {
+        var local = document.createElement('script');
+        local.src = './lib/three.min.js';
+        document.head.appendChild(local);
+      };
+      document.head.appendChild(cdn);
+    })();
+  </script>
+</head>
+<body>
+  <header class="top-nav">
+    <div class="brand">Vixel</div>
+    <div class="actions">
+      <label class="file-input">
+        <input id="fileInput" type="file" accept="audio/*,video/*" />
+        <span>Upload Audio/Video</span>
+      </label>
+      <button id="playPauseBtn" aria-label="Play/Pause">Play</button>
+      <a class="docs-link" href="./docs/README.md" target="_blank" rel="noreferrer">Docs</a>
+    </div>
+  </header>
+
+  <aside class="left-nav">
+    <div class="panel">
+      <h3>Controls</h3>
+      <div class="control">
+        <label for="density">Vector Density</label>
+        <input id="density" type="range" min="10" max="80" value="40" />
+      </div>
+      <div class="control">
+        <label for="oneByOne">One-by-one Spawn</label>
+        <input id="oneByOne" type="checkbox" checked />
+      </div>
+      <div class="control">
+        <label for="spawnRate">Spawn Rate</label>
+        <input id="spawnRate" type="range" min="1" max="300" step="1" value="120" />
+      </div>
+      <div class="control">
+        <label for="osc">Oscillation</label>
+        <input id="osc" type="range" min="0" max="1" step="0.01" value="0" />
+      </div>
+      <div class="control">
+        <label for="trails">Trail Length</label>
+        <input id="trails" type="range" min="0" max="1" step="0.01" value="0.6" />
+      </div>
+      <div class="control">
+        <label for="colorPreset">Color Preset</label>
+        <select id="colorPreset">
+          <option value="aurora">Aurora</option>
+          <option value="neon">Neon</option>
+          <option value="sunset">Sunset</option>
+          <option value="mono">Mono</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="kickSens">Kick/Bass Sensitivity</label>
+        <input id="kickSens" type="range" min="0" max="1" step="0.01" value="0.35" />
+      </div>
+      <hr />
+      <h3>View</h3>
+      <div class="control">
+        <label for="mouseOrbit">Mouse Orbit</label>
+        <input id="mouseOrbit" type="checkbox" checked />
+      </div>
+      <div class="control">
+        <label for="showPlane">Show Plane/Grid</label>
+        <input id="showPlane" type="checkbox" checked />
+      </div>
+      <div class="control">
+        <label for="showPlane2">Show Perpendicular Plane</label>
+        <input id="showPlane2" type="checkbox" />
+      </div>
+      <div class="control">
+        <label for="showAxes">Show Axes</label>
+        <input id="showAxes" type="checkbox" checked />
+      </div>
+      <div class="control">
+        <label for="showTrails">Show Line Trails</label>
+        <input id="showTrails" type="checkbox" checked />
+      </div>
+      <div class="control">
+        <label for="spinX">Auto Spin X</label>
+        <input id="spinX" type="range" min="-2" max="2" step="0.01" value="0" />
+      </div>
+      <div class="control">
+        <label for="spinY">Auto Spin Y</label>
+        <input id="spinY" type="range" min="-2" max="2" step="0.01" value="0" />
+      </div>
+      <div class="control">
+        <label for="spinZ">Auto Spin Z</label>
+        <input id="spinZ" type="range" min="-2" max="2" step="0.01" value="0" />
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div id="dropZone" class="drop-zone" aria-label="Drop audio/video here">Drop audio/video here</div>
+    <div class="axis-legend" aria-hidden="true">
+      <span class="x">X</span>
+      <span class="y">Y</span>
+      <span class="z">Z</span>
+    </div>
+    <div class="zoom-controls" aria-hidden="true">
+      <button id="zoomIn" title="Zoom In">+</button>
+      <button id="zoomOut" title="Zoom Out">−</button>
+    </div>
+    <canvas id="stage"></canvas>
+  </main>
+
+  <script src="./js/utils.js"></script>
+  <script src="./js/audio.js"></script>
+  <script src="./js/vectorField.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
+
+
