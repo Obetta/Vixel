@@ -183,24 +183,17 @@
             </button>
             <div class="player-info">
               <div id="trackName" class="track-name">No track loaded</div>
-              <div class="player-controls-bottom">
-                <div class="time-controls">
-                  <span id="currentTime" class="time-display">0:00</span>
-                  <input type="range" id="timeSlider" class="time-slider" min="0" max="100" value="0" 
-                         aria-label="Audio playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" 
-                         aria-valuetext="0:00" />
-                  <span id="duration" class="time-display">0:00</span>
-                </div>
-                <label for="loopToggle" class="loop-toggle-label" title="Loop playback">
-                  <input id="loopToggle" type="checkbox" checked />
-                  <svg class="loop-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21.59 15c.37-.56.59-1.14.59-2 0-2.21-2.69-4-6-4s-6 1.79-6 4 2.69 4 6 4c.87 0 1.73-.15 2.5-.42"></path>
-                    <path d="M2.41 9c-.37.56-.59 1.14-.59 2 0 2.21 2.69 4 6 4s6-1.79 6-4-2.69-4-6-4c-.87 0-1.73.15-2.5.42"></path>
-                    <path d="M8 8l-8 0 0 8"></path>
-                    <path d="M16 16l8 0 0-8"></path>
-                  </svg>
-                </label>
+              <div class="time-controls">
+                <span id="currentTime" class="time-display">0:00</span>
+                <input type="range" id="timeSlider" class="time-slider" min="0" max="100" value="0" 
+                       aria-label="Audio playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" 
+                       aria-valuetext="0:00" />
+                <span id="duration" class="time-display">0:00</span>
               </div>
+              <label for="loopToggle" class="loop-toggle-label" title="Loop playback">
+                <input id="loopToggle" type="checkbox" />
+                <span class="loop-text">Loop Playback</span>
+              </label>
             </div>
           </div>
           <div class="drop-zone-container" id="dropZone">

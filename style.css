@@ -105,26 +105,37 @@ body {
 .loop-toggle-label {
   display: flex;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
-  position: relative;
 }
 
 .loop-toggle-label input[type="checkbox"] {
   appearance: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 18px;
+  height: 18px;
   border: 2px solid var(--cardBorder);
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   flex-shrink: 0;
+  border-radius: 4px;
 }
 
 .loop-toggle-label input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(167, 139, 250, 0.15));
+  background: var(--accent);
   border-color: var(--accent);
+}
+
+.loop-toggle-label input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--bg0);
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .loop-toggle-label input[type="checkbox"]:hover {
@@ -132,26 +143,22 @@ body {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.loop-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  opacity: 0.6;
+.loop-text {
+  opacity: 0.7;
   transition: all 0.3s ease;
-  width: 14px;
-  height: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
 }
 
-.loop-toggle-label input[type="checkbox"]:checked + .loop-icon {
+.loop-toggle-label input[type="checkbox"]:checked ~ .loop-text {
   opacity: 1;
   color: var(--accent);
 }
 
 .play-pause-btn {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2px solid var(--cardBorder);
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.15), rgba(167, 139, 250, 0.1));
@@ -214,8 +221,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
 .time-display {
@@ -256,37 +262,35 @@ body {
 .time-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 8px;
+  height: 20px;
   background: var(--accent);
-  border-radius: 50%;
+  border-radius: 2px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(125, 211, 252, 0.4), 0 0 0 3px rgba(125, 211, 252, 0.1);
-  border: 2px solid var(--bg0);
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.6);
+  border: none;
 }
 
 .time-slider::-webkit-slider-thumb:hover {
   background: var(--accent2);
-  transform: scale(1.25);
-  box-shadow: 0 3px 12px rgba(167, 139, 250, 0.5), 0 0 0 4px rgba(167, 139, 250, 0.15);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.8);
 }
 
 .time-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 8px;
+  height: 20px;
   background: var(--accent);
-  border: 2px solid var(--bg0);
-  border-radius: 50%;
+  border: none;
+  border-radius: 2px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(125, 211, 252, 0.4), 0 0 0 3px rgba(125, 211, 252, 0.1);
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.6);
 }
 
 .time-slider::-moz-range-thumb:hover {
   background: var(--accent2);
-  transform: scale(1.25);
-  box-shadow: 0 3px 12px rgba(167, 139, 250, 0.5), 0 0 0 4px rgba(167, 139, 250, 0.15);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.8);
 }
 
 .time-slider::-moz-range-track {
@@ -388,8 +392,8 @@ body {
   border-radius: 12px;
   padding: 16px;
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
   transition: all 0.3s ease;
 }
@@ -399,19 +403,18 @@ body {
   border-color: rgba(125, 211, 252, 0.3);
 }
 
-.player-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.player-controls-bottom {
+.player-card .play-controls {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
+}
+
+.player-info {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .track-info-group {
