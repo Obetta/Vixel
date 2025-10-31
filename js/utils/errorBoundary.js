@@ -25,8 +25,6 @@ window.VixelErrorBoundary = (function() {
 
     // Setup recovery mechanisms
     setupRecoveryMechanisms();
-
-    if (DEBUG) console.log('[ErrorBoundary] Initialized');
   }
 
   /**

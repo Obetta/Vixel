@@ -309,7 +309,6 @@ window.VixelAudioUI = (function() {
 
   async function refreshTrackList() {
     if (!window.VixelAudioStorage) {
-      if (window.DEBUG) console.log('[UI] VixelAudioStorage not available');
       return;
     }
     
@@ -319,18 +318,15 @@ window.VixelAudioUI = (function() {
       const list = document.getElementById('recentTracksList');
       
       if (!section || !list) {
-        if (window.DEBUG) console.warn('[UI] Recent tracks section elements not found');
         return;
       }
       
       // Show/hide section based on whether there are tracks
       if (tracks.length === 0) {
         section.classList.add('hidden');
-        if (window.DEBUG) console.log('[UI] No tracks found, hiding section');
         return;
       }
       
-      if (window.DEBUG) console.log(`[UI] Found ${tracks.length} saved track(s), showing section`);
       section.classList.remove('hidden');
       list.innerHTML = '';
       

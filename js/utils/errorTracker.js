@@ -33,12 +33,10 @@ window.VixelErrorTracker = (function() {
       config.sentry = { ...config.sentry, ...options.sentry };
       // Load Sentry SDK dynamically if needed
       // This would require adding Sentry as a dependency
-      if (DEBUG) console.log('[ErrorTracker] Sentry enabled');
     }
 
     if (options.custom && options.custom.endpoint) {
       config.custom = { ...config.custom, ...options.custom };
-      if (DEBUG) console.log('[ErrorTracker] Custom endpoint enabled');
     }
 
     if (options.console !== undefined) {

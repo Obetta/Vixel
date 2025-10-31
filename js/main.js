@@ -28,18 +28,9 @@
     world = sceneData.world;
 
     camera = Camera.createCamera(canvasEl, orbit);
-    if (DEBUG) {
-      console.log('[Setup] Initializing camera with:', {
-        camRadius: camRadius.value,
-        phi: (orbit.phi * 180 / Math.PI).toFixed(1) + '°',
-        theta: (orbit.theta * 180 / Math.PI).toFixed(1) + '°',
-        canvasWidth: canvasEl.clientWidth,
-        canvasHeight: canvasEl.clientHeight
-      });
-    }
     
     // Bind updateCameraPosition with current scope
-    const updateCam = (suppressLog = false) => Camera.updateCameraPosition(camera, camRadius.value, orbit, suppressLog);
+    const updateCam = () => Camera.updateCameraPosition(camera, camRadius.value, orbit, true);
     updateCam();
 
     field = new VectorField(scene, renderer);
@@ -188,25 +179,21 @@
       window.VixelErrorBoundary.init();
     }
 
-    // Initialize keyboard navigation
+    // Wait for Three.js to be loaded before initializing
+    if (typeof THREE === 'undefined' || !window.__three_ready) {
+      window.__three_initCallback = init;
+      return;
+    }
+
+    // Initialize keyboard navigation (after Three.js check)
     if (window.VixelKeyboard) {
       window.VixelKeyboard.init();
     }
 
-    if (DEBUG) console.log('[Init] Starting initialization...');
-    // Wait for Three.js to be loaded before initializing
-    if (typeof THREE === 'undefined' || !window.__three_ready) {
-      if (DEBUG) {
-        console.log('[Init] Waiting for Three.js...', { 
-          THREE: typeof THREE, 
-          __three_ready: window.__three_ready 
-        });
-      }
-      window.__three_initCallback = init;
-      return;
+    // Initialize shortcuts modal (after Three.js check)
+    if (window.VixelShortcuts) {
+      window.VixelShortcuts.init();
     }
-    
-    if (DEBUG) console.log('[Init] Three.js loaded, proceeding...');
     
     // Setup performance monitoring with error handling
     if (typeof Stats !== 'undefined') {
@@ -232,9 +219,7 @@
     }
 
     setupThree();
-    if (DEBUG) console.log('[Init] setupThree complete, camera:', camera ? 'exists' : 'missing');
     setupControls();
-    if (DEBUG) console.log('[Init] setupControls complete');
     
     // Listen for new track events to reset field
     const newTrackHandler = () => {
@@ -250,7 +235,6 @@
     }
     
     animate();
-    if (DEBUG) console.log('[Init] Animation loop started');
   }
 
   window.addEventListener('resize', resize);

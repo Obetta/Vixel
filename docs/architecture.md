@@ -1,10 +1,10 @@
 # Vixel Architecture
 
-Technical documentation of the audio → visual pipeline.
+Technical documentation of the audio → visual pipeline and system design.
 
 ---
 
-## Pipeline
+## Pipeline Overview
 
 1. **Audio Input** - File loading via `<audio>` element → Web Audio API
 2. **FFT Analysis** - `AnalyserNode` (2048 samples) → 8 log-spaced frequency bands
@@ -28,21 +28,23 @@ Audio → AnalyserNode (FFT) → 8 Bands → Normalize → Weight → Motion →
 
 ## Module Structure
 
-### Audio (`js/audio/`)
-- **loader.js** - File loading, drag-and-drop
+### Audio Subsystem (`js/audio/` - 9 modules)
+- **loader.js** - File loading, validation, drag-and-drop
 - **analyzer.js** - FFT → 8-band computation
 - **beatDetection.js** - Kick/snare detection, BPM
 - **player.js** - Playback control
-- **ui.js** - UI controls
 - **preScanner.js** - Background full-track analysis
+- **preScannerWorker.js** - Web Worker for analysis
+- **storage.js** - IndexedDB file caching
+- **ui.js** - UI controls and feedback
 - **index.js** - Orchestrator
 
-### Core (`js/core/`)
+### Core Subsystem (`js/core/` - 3 modules)
 - **scene.js** - Three.js renderer setup
 - **camera.js** - Camera + OrbitControls
 - **controls.js** - UI event handlers
 
-### Particles (`js/particles/`)
+### Particles Subsystem (`js/particles/` - 6 modules)
 - **geometry.js** - InstancedMesh construction
 - **spawning.js** - Particle activation
 - **placement.js** - Position calculation
@@ -50,16 +52,35 @@ Audio → AnalyserNode (FFT) → 8 Bands → Normalize → Weight → Motion →
 - **trails.js** - Trail rendering
 - **index.js** - VectorField orchestrator
 
+### Utils Subsystem (`js/utils/` - 5 modules)
+- **cleanup.js** - Memory management
+- **errorBoundary.js** - Error handling
+- **errorTracker.js** - Error logging
+- **keyboard.js** - Keyboard shortcuts
+- **stats.js** - Performance monitoring
+
+**Total:** 23 modules across 4 subsystems
+
 ---
 
-## Pre-Scanning
+## Architecture Patterns
 
-Background analysis of full track:
-- Maps frequency spectrum over time
-- Improves BPM accuracy
-- Enables better node placement
-- Phase 1: Background processing (✅ Complete)
-- Phase 2: IndexedDB caching (🔄 Next)
+### Communication
+- **Global namespace** - All modules on `window.Vixel*`
+- **Explicit orchestrator** - `main.js` coordinates subsystems
+- **Event-driven** - Custom events for cross-module communication
+- **Cleanup system** - Centralized resource management
+
+### Strengths
+- ✅ Clear separation of concerns
+- ✅ No circular dependencies
+- ✅ Graceful error handling
+- ✅ Modular, testable design
+
+### Future Improvements
+- Migrate to ES6 modules for tree-shaking
+- Add dependency injection for testing
+- Consider TypeScript for type safety
 
 ---
 
@@ -69,62 +90,41 @@ Background analysis of full track:
 - **GPU:** Single draw call via InstancedMesh
 - **Memory:** Proper cleanup, blob URL management
 - **Analysis:** 3-4 seconds for 3-minute song
+- **Pre-scanning:** Background full-track analysis
 
 ---
 
 ## Browser Support
 
 - Chrome 90+, Firefox 90+, Safari 14+, Edge 90+
-- Requires: Web Audio API, WebGL 2.0, InstancedMesh
+- **Requirements:** Web Audio API, WebGL 2.0, InstancedMesh
 
 ---
 
-## Security Considerations
+## Directory Structure
 
-### Content Security Policy (CSP)
-- Strict CSP with no `unsafe-inline` scripts
-- External scripts only from trusted CDNs
-- Blob URLs properly managed and revoked
+```
+Vixel/
+├── js/
+│   ├── audio/      # Audio analysis & playback (9 modules)
+│   ├── core/       # 3D scene management (3 modules)
+│   ├── particles/  # Particle system (6 modules)
+│   ├── utils/      # Utilities (5 modules)
+│   ├── main.js     # App orchestrator
+│   └── utils.js    # Shared functions
+├── docs/           # Documentation
+├── html/           # Additional pages
+├── lib/            # Three.js library
+├── assets/         # Media files
+├── tests/          # Test files
+└── index.html      # Entry point
+```
 
-### File Handling
-- File type validation (audio/*, video/* only)
-- File size limits (500MB default, 1GB maximum)
-- Client-side only processing (no server uploads)
-- Proper error handling and user feedback
-
-### Memory Management
-- Comprehensive cleanup on page unload
-- Blob URL tracking and automatic revocation
-- Event listener cleanup
-- Animation frame cancellation
-
-See `SECURITY.md` for detailed security documentation.
-
-## Modularity
-
-### Current Architecture
-- **3 subsystems:** Audio, Core, Particles
-- **23 modules** with clear responsibilities
-- Global namespace pattern for browser compatibility
-- Dependency order management via HTML script loading
-
-### Strengths
-- Clear separation of concerns
-- No circular dependencies
-- Graceful error handling
-- Independent module evolution
-
-### Improvement Opportunities
-- Migrate to ES6 modules for better tree-shaking
-- Add dependency injection for testing
-- Implement configuration module
-- Consider TypeScript for type safety
-
-See `MODULARITY.md` for detailed architecture assessment.
+---
 
 ## Future Enhancements
 
-- Web Workers for pre-scanning
+- Web Workers for pre-scanning ✅
 - IndexedDB caching for analysis results
 - Live microphone input support
 - Video texture support
@@ -133,6 +133,4 @@ See `MODULARITY.md` for detailed architecture assessment.
 
 ---
 
-*For implementation details, see source code in `js/` modules.*  
-*For security information, see `SECURITY.md`.*  
-*For modularity assessment, see `MODULARITY.md`.*
+**Last Updated:** 2025-01-27

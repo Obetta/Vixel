@@ -68,7 +68,6 @@ window.VixelAudioStorage = (function() {
           trackData.id = existingTrack.id;
           const updateRequest = store.put(trackData);
           updateRequest.onsuccess = () => {
-            if (window.DEBUG) console.log('[Storage] Updated track:', file.name);
             resolve(trackData);
           };
           updateRequest.onerror = () => reject(updateRequest.error);
@@ -77,7 +76,6 @@ window.VixelAudioStorage = (function() {
           const addRequest = store.add(trackData);
           addRequest.onsuccess = () => {
             trackData.id = addRequest.result;
-            if (window.DEBUG) console.log('[Storage] Saved track:', file.name);
             resolve(trackData);
             
             // Clean up old tracks if we exceed the limit
@@ -160,7 +158,6 @@ window.VixelAudioStorage = (function() {
       return new Promise((resolve, reject) => {
         const request = store.delete(trackId);
         request.onsuccess = () => {
-          if (window.DEBUG) console.log('[Storage] Deleted track:', trackId);
           resolve();
         };
         request.onerror = () => reject(request.error);
@@ -212,9 +209,6 @@ window.VixelAudioStorage = (function() {
         await deleteTrack(track.id);
       }
       
-      if (window.DEBUG) {
-        console.log(`[Storage] Cleaned up ${tracksToDelete.length} old tracks`);
-      }
     } catch (error) {
       console.error('[Storage] Failed to cleanup old tracks:', error);
     }

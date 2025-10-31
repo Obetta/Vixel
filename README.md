@@ -120,12 +120,13 @@ Vixel/
 ### Keyboard Shortcuts
 
 - `Space` - Toggle playback
-- `↑↓` - Adjust vector density
-- `←→` - Adjust oscillation intensity
-- `Q/E` - Adjust trail length
-- `R` - Reset camera
+- `←` `→` - Seek through track (when focused on timeline)
+- `↑` `↓` - Adjust trail persistence
+- `Q` `E` - Adjust oscillation intensity
+- `R` - Reset camera spin
 - `F` - Toggle fullscreen
-- `S` - Screenshot
+- `S` - Toggle performance stats
+- `Esc` - Close modals
 
 ### Mouse Controls
 

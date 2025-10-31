@@ -153,9 +153,6 @@ window.VixelAudioLoader = (function() {
             // Use cached pre-scan data
             const cachedData = window.__vixelPreScanCache[fileKey];
             window.__vixelPreScanData = cachedData;
-            if (window.DEBUG) {
-              console.log('[Audio] Using cached pre-scan data');
-            }
             
             // Notify that pre-scanned data is ready
             const event = new CustomEvent('vixelPreScanComplete', { 
@@ -164,10 +161,6 @@ window.VixelAudioLoader = (function() {
             window.dispatchEvent(event);
           } else {
             // Run new pre-scan
-            if (window.DEBUG) {
-              console.log('[Audio] Starting new pre-scan analysis');
-            }
-            
             const preScanData = await window.VixelAudioPreScanner.preScanAudio(
               file,
               (progress) => {
@@ -186,9 +179,6 @@ window.VixelAudioLoader = (function() {
             
             // Pre-scan complete - store for playback
             window.__vixelPreScanData = preScanData;
-            if (window.DEBUG) {
-              console.log(`Pre-scan complete in ${preScanData.analysisTime.toFixed(2)}s`);
-            }
             
             // Notify that pre-scanned data is ready
             const event = new CustomEvent('vixelPreScanComplete', { 
@@ -197,9 +187,6 @@ window.VixelAudioLoader = (function() {
             window.dispatchEvent(event);
           }
         } catch (err) {
-          if (DEBUG) {
-            console.warn('Pre-scan failed, using real-time mode:', err);
-          }
           // Pre-scan failure is not critical, continue without pre-scan data
         }
       }
@@ -222,9 +209,7 @@ window.VixelAudioLoader = (function() {
       // Save track to storage for persistence
       if (window.VixelAudioStorage) {
         try {
-          if (window.DEBUG) console.log('[Audio] Saving track to storage:', file.name);
           await window.VixelAudioStorage.saveTrack(file);
-          if (window.DEBUG) console.log('[Audio] Track saved successfully');
           // Refresh track list UI if it exists
           if (window.VixelAudioUI && window.VixelAudioUI.refreshTrackList) {
             await window.VixelAudioUI.refreshTrackList();
@@ -232,12 +217,7 @@ window.VixelAudioLoader = (function() {
         } catch (err) {
           // Log but don't fail - storage is optional
           console.error('[Audio] Failed to save track to storage:', err);
-          if (window.DEBUG) {
-            console.warn('[Audio] Storage error details:', err);
-          }
         }
-      } else {
-        if (window.DEBUG) console.warn('[Audio] VixelAudioStorage not available');
       }
 
       // Notify field to reset for new track
