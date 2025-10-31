@@ -10,9 +10,3 @@ copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
 The Software is provided "AS IS", without warranty of any kind.
-
-Note: Certain proprietary modules are included in this project:
-- js/vectorField.js (compiled/minified or otherwise protected)
-These proprietary modules may be used as-is but may not be modified,
-redistributed in source form, or incorporated into derivative works
-without express written permission from the copyright holder.

@@ -1,390 +1,256 @@
-// App entry: Three.js setup, controls wiring, render loop
+// App entry: Main orchestrator for render loop and initialization
 
 (function () {
+  const DEBUG = window.DEBUG || false;
   const { VectorField } = window.VixelField;
+  const Scene = window.VixelScene;
+  const Camera = window.VixelCamera;
+  const Controls = window.VixelControls;
 
   let renderer, scene, camera, field;
   let canvasEl, world;
   let spin = { x: 0.0, y: 0.0, z: 0.0 };
   let orbit = { enabled: true, dragging: false, lastX: 0, lastY: 0, phi: Math.PI / 4, theta: Math.PI / 4 };
-  let camRadius = 10.0;
-
-  // Helper function to update camera position from spherical coordinates
-  function updateCameraPosition() {
-    const x = camRadius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
-    const y = camRadius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
-    const z = camRadius * Math.cos(orbit.phi);
-    camera.position.set(x, y, z);
-    camera.lookAt(0, 0, 0);
-  }
+  let camRadius = { value: 10.0 }; // Use object to allow mutation from zoom handlers
+  let stats = null;
+  let statsFps = null;
+  let statsMs = null;
+  let statsMb = null;
+  let statsContainer = null;
 
   function setupThree() {
     canvasEl = document.getElementById('stage');
-    if (!canvasEl) {
-      console.error('Canvas element not found!');
-      return;
+    const sceneData = Scene.setupScene(canvasEl);
+    if (!sceneData) return;
+    
+    renderer = sceneData.renderer;
+    scene = sceneData.scene;
+    world = sceneData.world;
+
+    camera = Camera.createCamera(canvasEl, orbit);
+    if (DEBUG) {
+      console.log('[Setup] Initializing camera with:', {
+        camRadius: camRadius.value,
+        phi: (orbit.phi * 180 / Math.PI).toFixed(1) + '°',
+        theta: (orbit.theta * 180 / Math.PI).toFixed(1) + '°',
+        canvasWidth: canvasEl.clientWidth,
+        canvasHeight: canvasEl.clientHeight
+      });
     }
     
-    renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.autoClear = false; // keep color buffer for trails fade
-    
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0b0f17);
-
-    // Ensure canvas has dimensions before creating camera
-    const width = canvasEl.clientWidth || 800;
-    const height = canvasEl.clientHeight || 600;
-    renderer.setSize(width, height, false);
-    camera = new THREE.PerspectiveCamera(55, width / height || 1, 0.1, 100);
-    // Isometric view with Z up - matching the desired screenshot
-    camera.up.set(0, 0, 1);
-    // Initialize camera position using spherical coordinates
-    updateCameraPosition();
-
-    const hemi = new THREE.HemisphereLight(0xaec6ff, 0x0b0f17, 0.8);
-    scene.add(hemi);
-    const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-    dir.position.set(4, -3, 7);
-    scene.add(dir);
-
-    world = new THREE.Group();
-    scene.add(world);
+    // Bind updateCameraPosition with current scope
+    const updateCam = (suppressLog = false) => Camera.updateCameraPosition(camera, camRadius.value, orbit, suppressLog);
+    updateCam();
 
     field = new VectorField(scene, renderer);
-    // Attach field mesh to world so we can rotate independently
     world.add(field.getObject3D());
     const trailsObj = field.getTrailsObject3D && field.getTrailsObject3D();
     if (trailsObj) world.add(trailsObj);
     if (field.edgeLines) world.add(field.edgeLines);
 
-    // Reference plane/grid and axes
-    const grid = new THREE.GridHelper(18, 24, 0x324155, 0x243041);
-    grid.material.transparent = true;
-    grid.material.opacity = 0.35;
-    grid.rotation.x = Math.PI / 2; // XY plane at z=0
-    grid.position.z = 0;
-    grid.name = 'vixel-grid-plane';
-    world.add(grid);
-
-    const axes = new THREE.AxesHelper(4.5);
-    axes.name = 'vixel-axes-helper';
-    world.add(axes);
-
-    // Perpendicular plane (YZ), visible by default
-    const grid2 = new THREE.GridHelper(18, 24, 0x324155, 0x243041);
-    grid2.material.transparent = true;
-    grid2.material.opacity = 0.25;
-    grid2.rotation.z = Math.PI / 2; // YZ plane at x=0
-    grid2.position.x = 0;
-    grid2.name = 'vixel-grid-plane-2';
-    grid2.visible = true;
-    world.add(grid2);
+    Scene.initialRender(renderer, scene, camera);
     
-    // Initial render to show the scene immediately
-    // Since autoClear is false, we need to manually clear before first render
-    renderer.autoClearColor = true;
-    renderer.clear();
-    renderer.render(scene, camera);
-    renderer.autoClearColor = false; // restore for trails
+    // Setup camera controls with bound update function
+    Camera.setupOrbitControls(canvasEl, camera, orbit, camRadius.value, updateCam);
+    Camera.setupZoom(canvasEl, camera, camRadius, orbit, updateCam);
   }
 
   function resize() {
-    if (!canvasEl) return;
-    const w = canvasEl.clientWidth || window.innerWidth;
-    const h = canvasEl.clientHeight || window.innerHeight;
-    if (w === 0 || h === 0) {
-      // Canvas not sized yet, try again on next frame
-      requestAnimationFrame(resize);
-      return;
-    }
-    if (renderer) {
-      renderer.setSize(w, h, false);
-    }
-    if (camera && h > 0) {
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    }
-  }
-
-  // Band visibility removed; particles are colored by originating band automatically
-
-  // Helper function to update value displays
-  function updateValueDisplay(id, value, decimals = 2) {
-    const display = document.getElementById(id);
-    if (display) {
-      if (decimals === 0) {
-        display.textContent = Math.round(value);
-      } else {
-        display.textContent = value.toFixed(decimals);
-      }
-      return true;
-    }
-    return false;
+    Scene.resize(renderer, camera, canvasEl);
   }
 
   function setupControls() {
-    const density = document.getElementById('density');
-    const spawnRate = document.getElementById('spawnRate');
-    const pathStep = document.getElementById('pathStep');
-    const osc = document.getElementById('osc');
-    const trails = document.getElementById('trails');
-    const preset = document.getElementById('colorPreset');
-    const kickSens = document.getElementById('kickSens');
-    // band visibility UI removed
-    const mouseOrbit = document.getElementById('mouseOrbit');
-    const showPlane = document.getElementById('showPlane');
-    const showPlane2 = document.getElementById('showPlane2');
-    const showAxes = document.getElementById('showAxes');
-    const showTrails = document.getElementById('showTrails');
-    const spinX = document.getElementById('spinX');
-    const spinY = document.getElementById('spinY');
-    const spinZ = document.getElementById('spinZ');
-    const zoomIn = document.getElementById('zoomIn');
-    const zoomOut = document.getElementById('zoomOut');
-
-    if (density) {
-      density.addEventListener('input', () => {
-        const val = Number(density.value);
-        updateValueDisplay('densityValue', val, 0);
-        field.setDensity(val);
-        // Re-add mesh and edges to world after density change
-        if (world) {
-          const mesh = field.getObject3D();
-          if (mesh && !mesh.parent) {
-            world.add(mesh);
-          }
-          if (field.edgeLines && !field.edgeLines.parent) {
-            world.add(field.edgeLines);
-          }
-        }
-      });
-    }
-    if (spawnRate) {
-      spawnRate.addEventListener('input', () => {
-        const val = Number(spawnRate.value);
-        updateValueDisplay('spawnRateValue', val, 0);
-        field.setSpawnRate(val);
-      });
-    }
-    if (pathStep) {
-      pathStep.addEventListener('input', () => {
-        const val = Number(pathStep.value);
-        updateValueDisplay('pathStepValue', val, 2);
-        // Note: setPathStep not currently implemented in VectorField
-      });
-    }
-    if (osc) {
-      osc.addEventListener('input', () => {
-        const val = Number(osc.value);
-        updateValueDisplay('oscValue', val, 2);
-        field.setOscillation(val);
-      });
-    }
-    if (trails) {
-      trails.addEventListener('input', () => {
-        const val = Number(trails.value);
-        updateValueDisplay('trailsValue', val, 2);
-        field.setTrailStrength(val);
-      });
-    }
-    if (kickSens) {
-      kickSens.addEventListener('input', () => {
-        const val = Number(kickSens.value);
-        updateValueDisplay('kickSensValue', val, 2);
-      });
-    }
-    if (preset) preset.addEventListener('change', () => field.setColorPreset(preset.value));
-    if (mouseOrbit) mouseOrbit.addEventListener('change', () => { orbit.enabled = mouseOrbit.checked; });
-    if (showPlane) showPlane.addEventListener('change', () => {
-      const plane = world.getObjectByName('vixel-grid-plane');
-      if (plane) plane.visible = showPlane.checked;
-    });
-    if (showTrails) showTrails.addEventListener('change', () => field.setTrailsVisible(showTrails.checked));
-    if (showAxes) showAxes.addEventListener('change', () => {
-      const axes = world.getObjectByName('vixel-axes-helper');
-      if (axes) axes.visible = showAxes.checked;
-      // UI legend mirrors the toggle
-      const legend = document.querySelector('.axis-legend');
-      if (legend) legend.style.display = showAxes.checked ? 'flex' : 'none';
-    });
-    if (showPlane2) showPlane2.addEventListener('change', () => {
-      const plane2 = world.getObjectByName('vixel-grid-plane-2');
-      if (plane2) plane2.visible = showPlane2.checked;
-    });
-    if (spinX) {
-      spinX.addEventListener('input', () => {
-        const val = Number(spinX.value);
-        updateValueDisplay('spinXValue', val, 2);
-        spin.x = val * 0.5;
-      });
-    }
-    if (spinY) {
-      spinY.addEventListener('input', () => {
-        const val = Number(spinY.value);
-        updateValueDisplay('spinYValue', val, 2);
-        spin.y = val * 0.5;
-      });
-    }
-    if (spinZ) {
-      spinZ.addEventListener('input', () => {
-        const val = Number(spinZ.value);
-        updateValueDisplay('spinZValue', val, 2);
-        spin.z = val * 0.5;
-      });
-    }
-    const applyZoom = (delta) => {
-      if (!camera) return;
-      camRadius = Math.max(3, Math.min(40, camRadius * (1 + delta)));
-      updateCameraPosition();
-    };
-    if (zoomIn) zoomIn.addEventListener('click', () => applyZoom(-0.1));
-    if (zoomOut) zoomOut.addEventListener('click', () => applyZoom(0.1));
-    if (canvasEl) {
-      canvasEl.addEventListener('wheel', (e) => { 
-        e.preventDefault(); 
-        applyZoom(e.deltaY > 0 ? 0.1 : -0.1); 
-      }, { passive: false });
-    }
-
-    // Initialize defaults and value displays
-    if (density) {
-      const val = Number(density.value);
-      updateValueDisplay('densityValue', val, 0);
-      field.setDensity(val);
-    }
-    if (spawnRate) {
-      const val = Number(spawnRate.value);
-      updateValueDisplay('spawnRateValue', val, 0);
-      field.setSpawnRate(val);
-    }
-    if (pathStep) {
-      const val = Number(pathStep.value);
-      updateValueDisplay('pathStepValue', val, 2);
-      // Note: setPathStep not currently implemented in VectorField
-    }
-    if (osc) {
-      const val = Number(osc.value);
-      updateValueDisplay('oscValue', val, 2);
-      field.setOscillation(val);
-    }
-    if (trails) {
-      const val = Number(trails.value);
-      updateValueDisplay('trailsValue', val, 2);
-      field.setTrailStrength(val);
-    }
-    if (kickSens) {
-      const val = Number(kickSens.value);
-      updateValueDisplay('kickSensValue', val, 2);
-    }
-    if (preset) field.setColorPreset(preset.value);
-    if (spinX) {
-      const val = Number(spinX.value);
-      updateValueDisplay('spinXValue', val, 2);
-      spin.x = val * 0.5;
-    }
-    if (spinY) {
-      const val = Number(spinY.value);
-      updateValueDisplay('spinYValue', val, 2);
-      spin.y = val * 0.5;
-    }
-    if (spinZ) {
-      const val = Number(spinZ.value);
-      updateValueDisplay('spinZValue', val, 2);
-      spin.z = val * 0.5;
-    }
-    if (showTrails) field.setTrailsVisible(showTrails.checked);
-    if (showPlane) {
-      const plane = world.getObjectByName('vixel-grid-plane');
-      if (plane) plane.visible = showPlane.checked;
-    }
-    if (showPlane2) {
-      const plane2 = world.getObjectByName('vixel-grid-plane-2');
-      if (plane2) plane2.visible = showPlane2.checked;
-    }
-    if (showAxes) {
-      const axes = world.getObjectByName('vixel-axes-helper');
-      if (axes) axes.visible = showAxes.checked;
-      const legend = document.querySelector('.axis-legend');
-      if (legend) legend.style.display = showAxes.checked ? 'flex' : 'none';
-    }
-
-    // Mouse orbit events - orbit camera around origin
-    if (!canvasEl) {
-      console.error('Canvas element not found for mouse orbit');
-    } else {
-      canvasEl.addEventListener('pointerdown', (e) => {
-        if (!orbit.enabled || !camera) return;
-        e.preventDefault();
-        orbit.dragging = true; 
-        orbit.lastX = e.clientX;
-        orbit.lastY = e.clientY;
-        canvasEl.style.cursor = 'grabbing';
-      });
-      window.addEventListener('pointermove', (e) => {
-        if (!orbit.dragging || !orbit.enabled || !camera) return;
-        e.preventDefault();
-        const dx = (e.clientX - orbit.lastX) * 0.005; // horizontal rotation (theta)
-        const dy = (e.clientY - orbit.lastY) * 0.005; // vertical rotation (phi)
-        orbit.lastX = e.clientX; 
-        orbit.lastY = e.clientY;
-        
-        orbit.theta -= dx; // rotate around Z-axis
-        orbit.phi = Math.max(0.1, Math.min(Math.PI - 0.1, orbit.phi - dy)); // clamp vertical angle
-        
-        updateCameraPosition();
-      });
-      window.addEventListener('pointerup', (e) => { 
-        orbit.dragging = false; 
-        if (canvasEl) canvasEl.style.cursor = 'grab';
-      });
-    }
+    Controls.setupControls(field, world, spin, orbit);
   }
 
   function animate() {
     requestAnimationFrame(animate);
     
-    // Safety check: ensure scene is initialized
-    if (!scene || !camera || !renderer || !field) return;
-    
-    const dt = 1 / 60;
-    const bands = window.VixelAudio.getBands();
-    const kick = window.VixelAudio.getKick();
-    field.beginTrails();
-    field.update(bands, kick);
+    try {
+      if (stats) stats.begin();
+      if (statsFps) statsFps.begin();
+      if (statsMs) statsMs.begin();
+      if (statsMb) statsMb.begin();
+      
+      // Safety check: ensure scene is initialized
+      if (!scene || !camera || !renderer || !field) {
+        if (stats) stats.end();
+        if (statsFps) statsFps.end();
+        if (statsMs) statsMs.end();
+        if (statsMb) statsMb.end();
+        return;
+      }
+      
+      const dt = 1 / 60;
+      const bands = window.VixelAudio ? window.VixelAudio.getBands() : new Array(8).fill(0);
+      const kick = window.VixelAudio ? window.VixelAudio.getKick() : 0;
+      
+      // Update field before trail rendering to ensure geometry is ready
+      if (field && typeof field.update === 'function') {
+        field.update(bands, kick);
+        if (typeof field.beginTrails === 'function') {
+          field.beginTrails();
+        }
+      }
 
-    // Auto spin
-    if (spin.x || spin.y || spin.z) {
-      world.rotation.x += spin.x * dt;
-      world.rotation.y += spin.y * dt;
-      world.rotation.z += spin.z * dt;
-    }
+      // Auto spin
+      if (spin.x || spin.y || spin.z) {
+        world.rotation.x += spin.x * dt;
+        world.rotation.y += spin.y * dt;
+        world.rotation.z += spin.z * dt;
+      }
 
-    // Camera orbit is handled in real-time in pointermove, no momentum needed
+      // Update camera position display
+      if (Controls && typeof Controls.updateCameraPositionDisplay === 'function') {
+        Controls.updateCameraPositionDisplay(camera);
+      }
 
-    // Update camera position display
-    if (camera) {
-      const pos = camera.position;
-      const posDisplay = document.getElementById('cameraPosition');
-      if (posDisplay) {
-        posDisplay.textContent = `X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}`;
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+      
+      if (stats) stats.end();
+      if (statsFps) statsFps.end();
+      if (statsMs) statsMs.end();
+      if (statsMb) statsMb.end();
+    } catch (error) {
+      // Error boundary will handle this, but ensure stats cleanup
+      if (stats) stats.end();
+      if (statsFps) statsFps.end();
+      if (statsMs) statsMs.end();
+      if (statsMb) statsMb.end();
+      
+      if (window.VixelErrorBoundary) {
+        window.VixelErrorBoundary.handleError(error, { context: 'animation loop' }, 'error');
+      } else {
+        console.error('[Animation] Error:', error);
       }
     }
-
-    renderer.render(scene, camera);
   }
 
+  function createCustomStatsDisplay() {
+    if (typeof Stats === 'undefined') return;
+
+    // Create container
+    statsContainer = document.createElement('div');
+    statsContainer.id = 'vixel-stats';
+    statsContainer.style.cssText = `
+      position: fixed;
+      top: 56px;
+      right: 326px;
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+    `;
+
+    // Create three Stats instances, one for each panel
+    statsFps = new Stats();
+    statsFps.showPanel(0); // FPS panel
+    statsFps.dom.style.position = 'relative';
+    statsFps.dom.style.margin = '0';
+    
+    statsMs = new Stats();
+    statsMs.showPanel(1); // MS panel
+    statsMs.dom.style.position = 'relative';
+    statsMs.dom.style.margin = '0';
+    
+    statsMb = new Stats();
+    statsMb.showPanel(2); // MB panel
+    statsMb.dom.style.position = 'relative';
+    statsMb.dom.style.margin = '0';
+
+    // Append all three Stats widgets to container
+    statsContainer.appendChild(statsFps.dom);
+    statsContainer.appendChild(statsMs.dom);
+    statsContainer.appendChild(statsMb.dom);
+    
+    document.body.appendChild(statsContainer);
+  }
+
+  // No longer needed - Stats.js handles its own rendering
+
+  window.toggleStatsDisplay = function(show) {
+    if (statsContainer) {
+      statsContainer.style.display = show ? 'flex' : 'none';
+    }
+  };
+
   function init() {
+    // Immediately ensure loading overlay is hidden
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+    }
+    
+    // Initialize error boundary first
+    if (window.VixelErrorBoundary) {
+      window.VixelErrorBoundary.init();
+    }
+
+    // Initialize keyboard navigation
+    if (window.VixelKeyboard) {
+      window.VixelKeyboard.init();
+    }
+
+    if (DEBUG) console.log('[Init] Starting initialization...');
     // Wait for Three.js to be loaded before initializing
     if (typeof THREE === 'undefined' || !window.__three_ready) {
+      if (DEBUG) {
+        console.log('[Init] Waiting for Three.js...', { 
+          THREE: typeof THREE, 
+          __three_ready: window.__three_ready 
+        });
+      }
       window.__three_initCallback = init;
       return;
     }
     
-    window.VixelAudio.init();
+    if (DEBUG) console.log('[Init] Three.js loaded, proceeding...');
+    
+    // Setup performance monitoring with error handling
+    if (typeof Stats !== 'undefined') {
+      try {
+        // Keep original stats for backward compatibility
+        stats = new Stats();
+        stats.dom.style.display = 'none';
+      } catch (error) {
+        if (window.VixelErrorBoundary) {
+          window.VixelErrorBoundary.handleError(error, { context: 'Stats initialization' }, 'warn');
+        }
+      }
+    }
+    createCustomStatsDisplay();
+    
+    // Initialize audio with error handling
+    if (window.VixelErrorBoundary) {
+      window.VixelErrorBoundary.safeExecute(() => {
+        window.VixelAudio.init();
+      }, { context: 'Audio initialization' });
+    } else {
+      window.VixelAudio.init();
+    }
+
     setupThree();
+    if (DEBUG) console.log('[Init] setupThree complete, camera:', camera ? 'exists' : 'missing');
     setupControls();
+    if (DEBUG) console.log('[Init] setupControls complete');
+    
+    // Listen for new track events to reset field
+    const newTrackHandler = () => {
+      if (field && field.resetForNewTrack) {
+        field.resetForNewTrack();
+      }
+    };
+    
+    if (window.VixelCleanup) {
+      window.VixelCleanup.addEventListener(window, 'vixelNewTrack', newTrackHandler);
+    } else {
+      window.addEventListener('vixelNewTrack', newTrackHandler);
+    }
+    
     animate();
+    if (DEBUG) console.log('[Init] Animation loop started');
   }
 
   window.addEventListener('resize', resize);
@@ -397,5 +263,3 @@
     }
   });
 })();
-
-

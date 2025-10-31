@@ -1,6 +1,8 @@
 // Utility functions and lightweight Perlin noise implementation
 
 window.VixelUtils = (function () {
+  // DEBUG flag - set window.DEBUG = true to enable debug logging
+  const DEBUG = window.DEBUG || false;
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
@@ -120,13 +122,21 @@ window.VixelUtils = (function () {
     };
   }
 
+  // Debug logging utility
+  function debugLog(...args) {
+    if (DEBUG) {
+      console.log(...args);
+    }
+  }
+
   return {
     clamp,
     lerp,
     mapRange,
     ema,
     Perlin,
-    createColorLerp
+    createColorLerp,
+    debugLog
   };
 })();
 
