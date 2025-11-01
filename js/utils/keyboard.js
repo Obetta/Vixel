@@ -62,9 +62,6 @@ window.VixelKeyboard = (function() {
         return;
       }
 
-      // S - Screenshot (stats are always visible now, so S key does nothing)
-      // Removed toggle functionality since stats are always visible in the right panel
-
       // Arrow keys for control adjustments
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();

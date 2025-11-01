@@ -42,7 +42,7 @@ No build process required. Deploy as-is to any static hosting service.
 - `↑` `↓` - Trail persistence
 - `Q` `E` - Oscillation intensity
 - `R` - Reset camera spin | `0` - Default camera
-- `F` - Fullscreen | `S` - Stats
+- `F` - Fullscreen
 
 **Mouse:**
 - Left drag - Rotate | Right drag - Pan | Scroll - Zoom
