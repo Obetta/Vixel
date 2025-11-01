@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 
-beforeAll(async () => {
+beforeAll(() => {
   // Mock AudioContext and related APIs
   global.AudioContext = class AudioContext {
     constructor() {
@@ -25,25 +25,59 @@ beforeAll(async () => {
     }
   };
 
-  // Create a script element to load audio modules
-  const loadScript = (src) => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.onload = resolve;
-      script.onerror = resolve; // Continue even if script fails
-      document.head.appendChild(script);
-    });
+  // Mock audio modules instead of loading scripts
+  global.window.VixelAudioAnalyzer = {
+    initialize: () => ({
+      audioCtx: new AudioContext(),
+      analyser: { frequencyBinCount: 256 }
+    }),
+    computeBands: () => [0.1, 0.2, 0.3, 0.4, 0.5],
+    getFrequencyDistribution: () => [],
+    NUM_BANDS: 5
   };
 
-  await loadScript('/js/utils.js');
-  await loadScript('/js/audio/loader.js');
-  await loadScript('/js/audio/analyzer.js');
-  await loadScript('/js/audio/beatDetection.js');
-  await loadScript('/js/audio/preScanner.js');
-  await loadScript('/js/audio/player.js');
-  await loadScript('/js/audio/ui.js');
-  await loadScript('/js/audio/index.js');
+  global.window.VixelBeatDetection = {
+    updateBeatData: () => {},
+    getKick: () => 0.5,
+    getBeat: () => false
+  };
+
+  global.window.VixelAudioLoader = {
+    loadFile: () => Promise.resolve(),
+    getMediaElement: () => null,
+    getFileName: () => '',
+    getCurrentTime: () => 0
+  };
+
+  global.window.VixelAudioPlayer = {
+    toggle: () => Promise.resolve(),
+    getPlaying: () => false
+  };
+
+  global.window.VixelAudioUI = {
+    initUI: () => {},
+    setupFileInput: () => {},
+    setupDropZone: () => {},
+    setupRecentTracks: () => {},
+    setupPlayPauseButton: () => {},
+    setupLoopToggle: () => {},
+    updatePlayPauseButton: () => {}
+  };
+
+  // Mock the main audio module
+  global.window.VixelAudio = {
+    init: async () => {},
+    getBands: () => [0.1, 0.2, 0.3, 0.4, 0.5],
+    getKick: () => 0.5,
+    getBeat: () => false,
+    getFrequencyDistribution: () => [],
+    isPlaying: () => false,
+    getFileName: () => '',
+    getCurrentTime: () => 0,
+    getPreScanData: () => null,
+    hasPreScanData: () => false,
+    NUM_BANDS: 5
+  };
 });
 
 describe('Audio System', () => {

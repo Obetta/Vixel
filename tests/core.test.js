@@ -8,8 +8,13 @@ describe('Core Modules', () => {
         add() {}
       },
       PerspectiveCamera: class PerspectiveCamera {
-        constructor() {
+        constructor(fov, aspect, near, far) {
+          this.fov = fov;
+          this.aspect = aspect;
+          this.near = near;
+          this.far = far;
           this.position = { set: () => {}, x: 0, y: 0, z: 0 };
+          this.up = { set: () => {}, x: 0, y: 0, z: 1 };
           this.lookAt = () => {};
         }
       },
