@@ -50,6 +50,13 @@
     
     <!-- Right side controls -->
     <div class="header-controls">
+      <button id="settingsBtn" class="header-btn" aria-label="Settings" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m15.5-6.5l-4.24 4.24m0 4.96l4.24 4.24m-11.52 0l4.24-4.24m0-4.96L5.5 4.5"></path>
+        </svg>
+        <span>Settings</span>
+      </button>
       <button id="shortcutsBtn" class="header-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
@@ -194,6 +201,60 @@
                   <span>Show Line Trails</span>
                 </label>
               </div>
+              <div class="control">
+                <label for="showVideo" class="checkbox-label">
+                  <input id="showVideo" type="checkbox" aria-label="Show Video Background" />
+                  <span>Show Video Background</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recording Section -->
+      <div class="section recording-section">
+        <h3 class="section-title">Recording</h3>
+        <div class="section-content">
+          <div class="control-group">
+            <div class="control-group-content">
+              <div class="control">
+                <label for="recordingIncludeGrid" class="checkbox-label">
+                  <input id="recordingIncludeGrid" type="checkbox" checked aria-label="Include grid in recording" />
+                  <span>Include Grid in Recording</span>
+                </label>
+              </div>
+              <div class="control">
+                <div class="control-header">
+                  <label for="recordingFormat">Video Format</label>
+                  <span class="control-value" id="recordingFormatValue">Auto</span>
+                </div>
+                <select id="recordingFormat" aria-label="Recording video format">
+                  <option value="auto">Auto (Best Available)</option>
+                  <option value="webm-vp9">WebM (VP9)</option>
+                  <option value="webm-vp8">WebM (VP8)</option>
+                  <option value="mp4-h264">MP4 (H.264) - Safari Only</option>
+                </select>
+                <div class="control-desc" id="recordingFormatDesc">Auto detects best format for your browser</div>
+              </div>
+            </div>
+          </div>
+          <div class="recording-controls">
+            <button id="recordBtn" class="record-btn" aria-label="Start recording">
+              <svg id="recordIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="8"/>
+              </svg>
+              <span id="recordLabel">Record</span>
+            </button>
+            <button id="stopRecordBtn" class="stop-record-btn hidden" aria-label="Stop recording">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+              <span>Stop</span>
+            </button>
+            <div id="recordingStatus" class="recording-status hidden">
+              <span class="recording-indicator">●</span>
+              <span id="recordingTime">0:00</span>
             </div>
           </div>
         </div>
@@ -245,6 +306,104 @@
               </div>
             </div>
           </div>
+          
+          <!-- Video Controls Section (hidden by default, shown for video files) -->
+          <div class="video-controls-section hidden" id="videoControlsSection">
+            <div class="control-group">
+              <div class="control-group-header">
+                <span class="control-group-label">Video Controls</span>
+              </div>
+              <div class="control-group-content">
+                <div class="control">
+                  <div class="control-header">
+                    <label for="frameRate">Frame Rate</label>
+                    <span class="control-value" id="frameRateValue">0 fps</span>
+                  </div>
+                  <input id="frameRate" type="range" min="0.25" max="2" step="0.25" value="1" 
+                         aria-label="Video frame rate multiplier" aria-valuemin="0.25" aria-valuemax="2" aria-valuenow="1" />
+                </div>
+                <div class="control">
+                  <label for="frameStepMode" class="checkbox-label">
+                    <input id="frameStepMode" type="checkbox" aria-label="Frame step mode" />
+                    <span>Frame Step Mode</span>
+                  </label>
+                </div>
+                <div class="control">
+                  <label for="loopSegment" class="checkbox-label">
+                    <input id="loopSegment" type="checkbox" aria-label="Loop segment" />
+                    <span>Loop Segment</span>
+                  </label>
+                </div>
+                <div class="control" id="segmentLoopControls">
+                  <div class="control-header">
+                    <label for="segmentStart">Segment Start</label>
+                    <span class="control-value" id="segmentStartValue">0:00</span>
+                  </div>
+                  <input id="segmentStart" type="range" min="0" max="100" step="0.1" value="0" 
+                         aria-label="Segment start time" />
+                </div>
+                <div class="control" id="segmentEndControls">
+                  <div class="control-header">
+                    <label for="segmentEnd">Segment End</label>
+                    <span class="control-value" id="segmentEndValue">0:00</span>
+                  </div>
+                  <input id="segmentEnd" type="range" min="0" max="100" step="0.1" value="100" 
+                         aria-label="Segment end time" />
+                </div>
+                <div class="control">
+                  <button id="frameBackBtn" class="frame-step-btn" aria-label="Previous frame" title="Previous frame">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                      <line x1="5" y1="19" x2="5" y2="5"></line>
+                    </svg>
+                    <span>Previous Frame</span>
+                  </button>
+                  <button id="frameForwardBtn" class="frame-step-btn" aria-label="Next frame" title="Next frame">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                      <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                    <span>Next Frame</span>
+                  </button>
+                </div>
+                <div class="control">
+                  <div class="control-header">
+                    <span>Frame: <span id="frameNumber" class="frame-number">0</span></span>
+                    <span class="control-value">Time: <span id="frameTimestamp">00:00:00:000</span></span>
+                  </div>
+                </div>
+                <div class="control">
+                  <div class="control-header">
+                    <label for="videoOpacity">Opacity</label>
+                    <span class="control-value" id="videoOpacityValue">85%</span>
+                  </div>
+                  <input id="videoOpacity" type="range" min="0" max="100" step="1" value="85" 
+                         aria-label="Video opacity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="85" />
+                </div>
+                <div class="control">
+                  <div class="control-header">
+                    <label for="videoScale">Scale</label>
+                    <span class="control-value" id="videoScaleValue">100%</span>
+                  </div>
+                  <input id="videoScale" type="range" min="1" max="300" step="1" value="100" 
+                         aria-label="Video scale" aria-valuemin="1" aria-valuemax="300" aria-valuenow="100" />
+                </div>
+                <div class="control">
+                  <div class="control-header">
+                    <label for="videoBlendMode">Blend Mode</label>
+                  </div>
+                  <select id="videoBlendMode" aria-label="Video blend mode">
+                    <option value="Normal" selected>Normal</option>
+                    <option value="Additive">Additive</option>
+                    <option value="Subtract">Subtract</option>
+                    <option value="Multiply">Multiply</option>
+                    <option value="Screen">Screen</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div class="drop-zone-container" id="dropZone">
             <input id="fileInput" type="file" accept="audio/*,video/*" />
             <div class="drop-zone-content">
@@ -315,6 +474,7 @@
   <script src="./js/utils/errorBoundary.js"></script>
   <script src="./js/utils/keyboard.js"></script>
   <script src="./js/utils/shortcuts.js"></script>
+  <script src="./js/utils/settings.js"></script>
   <!-- Audio modules (load in dependency order) -->
   <script src="./js/audio/storage.js"></script>
   <script src="./js/audio/loader.js"></script>
@@ -335,6 +495,10 @@
   <script src="./js/core/scene.js"></script>
   <script src="./js/core/camera.js"></script>
   <script src="./js/core/controls.js"></script>
+  <!-- Video modules -->
+  <script src="./js/video/texture.js"></script>
+  <script src="./js/video/recorder.js"></script>
+  <script src="./js/video/controls.js"></script>
   <!-- Main app -->
   <script src="./js/main.js"></script>
 
@@ -398,6 +562,45 @@
             <kbd>Esc</kbd>
           </div>
           <div class="shortcut-desc">Close this dialog</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button id="closeSettingsModal" class="modal-close-btn" aria-label="Close settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-list">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Recording</h3>
+          <div class="setting-item">
+            <label for="settingsRecordingBitrate">Recording Bitrate</label>
+            <div class="setting-control">
+              <input id="settingsRecordingBitrate" type="range" min="1000000" max="8000000" step="500000" value="2500000" />
+              <span class="setting-value" id="settingsBitrateValue">2.5 Mbps</span>
+            </div>
+            <div class="setting-desc">Lower = smaller files, Higher = better quality</div>
+          </div>
+          <div class="setting-item">
+            <label for="settingsRecordingFPS">Target Frame Rate</label>
+            <div class="setting-control">
+              <select id="settingsRecordingFPS">
+                <option value="24">24 fps</option>
+                <option value="30" selected>30 fps</option>
+                <option value="60">60 fps</option>
+              </select>
+            </div>
+            <div class="setting-desc">Higher FPS increases file size</div>
+          </div>
         </div>
       </div>
     </div>

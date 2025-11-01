@@ -96,6 +96,16 @@
         }
       }
 
+      // Update video texture if active
+      if (window.VixelVideoTexture && window.VixelVideoTexture.update) {
+        window.VixelVideoTexture.update();
+      }
+      
+      // Update video frame display if active
+      if (window.VixelVideoControls && window.VixelVideoControls.updateFrameDisplay) {
+        window.VixelVideoControls.updateFrameDisplay();
+      }
+
       // Auto spin
       if (spin.x || spin.y || spin.z) {
         world.rotation.x += spin.x * dt;
@@ -233,6 +243,11 @@
     if (window.VixelShortcuts) {
       window.VixelShortcuts.init();
     }
+
+    // Initialize settings (after Three.js check)
+    if (window.VixelSettings) {
+      window.VixelSettings.init();
+    }
     
     // Setup performance monitoring with error handling
     if (typeof Stats !== 'undefined') {
@@ -265,6 +280,25 @@
     const newTrackHandler = () => {
       if (field && field.resetForNewTrack) {
         field.resetForNewTrack();
+      }
+      
+      // Handle video texture for video files
+      if (window.VixelVideoTexture && window.VixelAudioLoader && window.VixelAudioLoader.isVideoFile) {
+        const isVideo = window.VixelAudioLoader.isVideoFile();
+        if (isVideo) {
+          const videoEl = window.VixelAudioLoader.getMediaElement();
+          if (videoEl && field) {
+            const videoData = window.VixelVideoTexture.initVideoTexture(videoEl, { bounds: field.bounds });
+            if (videoData && videoData.quad && scene) {
+              scene.add(videoData.quad);
+            }
+          }
+        } else {
+          // Not a video - cleanup any existing video texture
+          if (window.VixelVideoTexture) {
+            window.VixelVideoTexture.cleanup();
+          }
+        }
       }
     };
     

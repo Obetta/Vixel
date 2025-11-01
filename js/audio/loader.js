@@ -206,6 +206,15 @@ window.VixelAudioLoader = (function() {
         window.VixelAudioUI.updateTimeDisplay(mediaEl);
       }
       
+      // Setup video controls if this is a video file
+      if (window.VixelVideoControls && (isVideo || file.type.startsWith('video/'))) {
+        window.VixelVideoControls.setupControls(mediaEl, true);
+        window.VixelVideoControls.integrateWithPlayer();
+      } else if (window.VixelVideoControls) {
+        // Clean up for audio files
+        window.VixelVideoControls.setupControls(mediaEl, false);
+      }
+      
       // Save track to storage for persistence
       if (window.VixelAudioStorage) {
         try {
@@ -273,12 +282,18 @@ window.VixelAudioLoader = (function() {
     return currentFileName;
   }
 
+  function isVideoFile() {
+    if (!mediaEl) return false;
+    return mediaEl instanceof HTMLVideoElement;
+  }
+
   return {
     loadFile,
     getMediaElement,
     getSourceNode,
     getCurrentTime,
-    getFileName
+    getFileName,
+    isVideoFile
   };
 })();
 

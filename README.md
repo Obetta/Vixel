@@ -12,7 +12,9 @@ Transform your music into mesmerizing 3D particle animations with real-time freq
 - **Dynamic motion** - Perlin noise, radial fields, and fluid trails
 - **Beat detection** - Visual pulses synchronized to kick/bass
 - **Background pre-scanning** - Enhanced placement through full-track analysis
-- **Responsive visuals** - Color and size modulation driven by audio amplitude
+- **Video file support** - Load videos with audio extraction and fullscreen texture background
+- **Video recording** - Save your visualizations as WebM files with audio
+- **Advanced video controls** - Frame stepping, segment looping, opacity, blend modes
 - **Intuitive controls** - Keyboard shortcuts and mouse navigation
 
 ---
@@ -46,6 +48,19 @@ No build process required. Deploy as-is to any static hosting service.
 
 **Mouse:**
 - Left drag - Rotate | Right drag - Pan | Scroll - Zoom
+
+**Recording:**
+- Click "Record" to start capturing
+- Click "Stop" to save the video
+- Choose save location (modern browsers) or auto-download
+- Format: WebM (VP9/VP8/H.264) with Opus audio
+
+**Video Files:**
+- Supports MP4, WebM, MOV video files
+- Toggle video background visibility
+- Frame-by-frame stepping and scrubbing
+- Segment looping between custom time points
+- Adjustable opacity, scale, and blend modes
 
 ---
 

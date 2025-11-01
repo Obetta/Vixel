@@ -22,6 +22,7 @@ window.VixelControls = (function () {
     const showPlane2 = document.getElementById('showPlane2');
     const showAxes = document.getElementById('showAxes');
     const showTrails = document.getElementById('showTrails');
+    const showVideo = document.getElementById('showVideo');
     const spinX = document.getElementById('spinX');
     const spinY = document.getElementById('spinY');
     const spinZ = document.getElementById('spinZ');
@@ -104,6 +105,19 @@ window.VixelControls = (function () {
       field.setTrailsVisible(showTrails.checked);
     }
 
+    // Video visibility toggle
+    if (showVideo) {
+      showVideo.addEventListener('change', () => {
+        if (window.VixelVideoTexture) {
+          window.VixelVideoTexture.setVisible(showVideo.checked);
+        }
+      });
+      // Initial state - hidden by default
+      if (window.VixelVideoTexture) {
+        window.VixelVideoTexture.setVisible(showVideo.checked);
+      }
+    }
+
     // Stats are always visible in the right panel now
     if (typeof window.toggleStatsDisplay === 'function') {
       window.toggleStatsDisplay(true);
@@ -160,6 +174,157 @@ window.VixelControls = (function () {
         }
       });
     }
+
+    // Recording controls
+    setupRecordingControls(field, world);
+  }
+
+  function setupRecordingControls(field, world) {
+    const recordBtn = document.getElementById('recordBtn');
+    const stopRecordBtn = document.getElementById('stopRecordBtn');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const recordingTime = document.getElementById('recordingTime');
+    const recordingIncludeGrid = document.getElementById('recordingIncludeGrid');
+    const recordingFormat = document.getElementById('recordingFormat');
+    
+    let recordingInterval = null;
+    let originalGridVisibility = {};
+    
+    if (!recordBtn || !stopRecordBtn) return;
+    
+    // Setup format selector display update
+    if (recordingFormat) {
+      recordingFormat.addEventListener('change', () => {
+        const formatValue = document.getElementById('recordingFormatValue');
+        if (formatValue) {
+          const selectedOption = recordingFormat.options[recordingFormat.selectedIndex];
+          formatValue.textContent = selectedOption.textContent.replace(/\(.*?\)/g, '').trim();
+        }
+      });
+    }
+
+    recordBtn.addEventListener('click', async () => {
+      if (!window.VixelRecorder) {
+        console.error('[Recording] VixelRecorder not available');
+        return;
+      }
+
+      // Get canvas
+      const canvas = document.getElementById('stage');
+      if (!canvas) {
+        console.error('[Recording] Canvas not found');
+        return;
+      }
+
+      // Get media element for audio
+      const mediaElement = window.VixelAudioLoader?.getMediaElement();
+      
+      // Store original visibility states
+      const grid1 = world.getObjectByName('vixel-grid-plane');
+      const grid2 = world.getObjectByName('vixel-grid-plane-2');
+      const axes = world.getObjectByName('vixel-axes-helper');
+      
+      if (grid1) originalGridVisibility.grid1 = grid1.visible;
+      if (grid2) originalGridVisibility.grid2 = grid2.visible;
+      if (axes) originalGridVisibility.axes = axes.visible;
+
+      // Apply recording visibility settings
+      const includeGrid = recordingIncludeGrid?.checked ?? true;
+      if (grid1) grid1.visible = includeGrid;
+      if (grid2) grid2.visible = includeGrid;
+      if (axes) axes.visible = includeGrid;
+
+      // Determine MIME type based on format selection
+      let mimeType = 'auto';
+      if (recordingFormat) {
+        switch(recordingFormat.value) {
+          case 'webm-vp9':
+            mimeType = 'video/webm;codecs=vp9,opus';
+            break;
+          case 'webm-vp8':
+            mimeType = 'video/webm;codecs=vp8,opus';
+            break;
+          case 'mp4-h264':
+            mimeType = 'video/mp4;codecs=h264,aac';
+            break;
+          case 'auto':
+          default:
+            mimeType = 'auto';
+            break;
+        }
+      }
+
+      // Get settings
+      const bitrate = window.VixelSettings ? window.VixelSettings.getRecordingBitrate() : 2500000;
+      const fps = window.VixelSettings ? window.VixelSettings.getRecordingFPS() : 30;
+
+      // Start recording
+      const success = await window.VixelRecorder.startRecording(canvas, mediaElement, {
+        includeAudio: true,
+        videoBitrate: bitrate,
+        targetFPS: fps,
+        mimeType: mimeType
+      });
+
+      if (success) {
+        // Update UI
+        recordBtn.classList.add('hidden');
+        stopRecordBtn.classList.remove('hidden');
+        recordingStatus?.classList.remove('hidden');
+        
+        // Update time every second
+        recordingInterval = setInterval(() => {
+          const duration = window.VixelRecorder.getRecordingDuration();
+          const minutes = Math.floor(duration / 60);
+          const seconds = Math.floor(duration % 60);
+          if (recordingTime) {
+            recordingTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }, 1000);
+      } else {
+        // Restore original visibility on failure
+        if (grid1) grid1.visible = originalGridVisibility.grid1;
+        if (grid2) grid2.visible = originalGridVisibility.grid2;
+        if (axes) axes.visible = originalGridVisibility.axes;
+      }
+    });
+
+    stopRecordBtn.addEventListener('click', async () => {
+      if (!window.VixelRecorder) return;
+
+      // Stop recording
+      const blob = await window.VixelRecorder.stopRecording();
+
+      // Restore original visibility states
+      const grid1 = world.getObjectByName('vixel-grid-plane');
+      const grid2 = world.getObjectByName('vixel-grid-plane-2');
+      const axes = world.getObjectByName('vixel-axes-helper');
+      
+      if (grid1) grid1.visible = originalGridVisibility.grid1;
+      if (grid2) grid2.visible = originalGridVisibility.grid2;
+      if (axes) axes.visible = originalGridVisibility.axes;
+
+      // Clear interval
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        recordingInterval = null;
+      }
+
+      // Update UI
+      recordBtn.classList.remove('hidden');
+      stopRecordBtn.classList.add('hidden');
+      recordingStatus?.classList.add('hidden');
+
+      // Download the recording
+      if (blob) {
+        const filename = `vixel-recording-${Date.now()}`;
+        const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+        console.log(`[Recording] Video ready: ${fileSizeMB} MB`);
+        console.log(`[Recording] Format: WebM with ${blob.type.includes('vp9') ? 'VP9' : 'VP8'} video codec`);
+        
+        await window.VixelRecorder.downloadRecording(blob, filename);
+      }
+    });
   }
 
   function updateCameraPositionDisplay(camera) {

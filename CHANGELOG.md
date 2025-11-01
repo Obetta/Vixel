@@ -4,6 +4,68 @@ All notable changes to Vixel will be documented in this file.
 
 ---
 
+## [Unreleased] - In Development
+
+### Added
+- **Settings system** (`js/utils/settings.js`) - Persistent user preferences
+  - Recording bitrate control (1-8 Mbps)
+  - Target frame rate selection (24/30/60 fps)
+  - Settings modal with Save As dialog integration
+  - localStorage persistence for preferences
+- **Video file support** - Full video texture rendering and controls
+  - Video file loading with audio extraction for visualization
+  - Fullscreen video texture background behind particle field
+  - Video opacity, scale, and blend mode controls
+  - Frame-by-frame stepping and scrubbing
+  - Segment looping with custom start/end points
+  - Frame rate multiplier control (0.25x to 2x)
+  - Video controls UI section (automatically shown for video files)
+  - Frame number and timestamp display
+- **Video recording** (`js/video/recorder.js`) - Record the visualization to video with audio
+  - Canvas + audio capture using MediaRecorder API
+  - Multiple codec support (VP9, VP8, H.264)
+  - Recording UI with live duration indicator
+  - Grid visibility toggle for recordings
+  - File System Access API save dialog with download fallback
+- **Track panel collapse** - Collapsible right navigation panel
+  - Centered track controls in top nav when panel collapsed
+  - Sync between main and collapsed nav controls
+  - Conditional visualization graying when audio panel collapsed
+
+### Changed
+- Enhanced audio loader for video file handling
+- Improved controls system for video-specific features
+- Updated main render loop for video texture updates
+- Performance stats moved to dedicated bottom section in left nav
+- Recording format selector with auto-detection
+- Video controls hidden by default, shown for video files
+
+### Fixed
+- Video texture cleanup on file change
+- Audio context exposure for recording
+- Media element type detection for video vs audio files
+
+---
+
+## [0.0.3] - 2025-01-28
+
+### Added
+- **Video recording** (`js/video/recorder.js`) - Record the visualization to video with audio
+- **Recording UI** - Record/Stop buttons with live duration indicator
+- **Grid toggle for recording** - Control whether grid/axes appear in the recording
+- **Save location dialog** - Choose where to save in modern browsers (File System Access API)
+- **MediaRecorder integration** - Canvas + audio capture using Web APIs
+
+### Technical
+- MediaRecorder API for canvas + audio recording
+- Audio routing from existing AudioContext via MediaStreamDestination
+- 30 FPS canvas capture at 2.5 Mbps bitrate
+- WebM codec with VP9/VP8 fallback
+- Grid visibility management during recording
+- File System Access API with fallback to auto-download
+
+---
+
 ## [0.0.2] - 2025-01-27
 
 ### Added

@@ -85,6 +85,10 @@ window.VixelAudio = (function() {
     return !!window.__vixelPreScanData;
   }
 
+  function getAudioContext() {
+    return audioCtx;
+  }
+
   return {
     init,
     getBands,
@@ -96,6 +100,7 @@ window.VixelAudio = (function() {
     getCurrentTime,
     getPreScanData,
     hasPreScanData,
+    getAudioContext,
     NUM_BANDS: window.VixelAudioAnalyzer.NUM_BANDS
   };
 })();

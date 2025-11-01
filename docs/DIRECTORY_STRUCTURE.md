@@ -49,15 +49,20 @@ js/
 │   ├── placement.js       # Position calculation
 │   ├── motion.js          # Physics simulation
 │   └── trails.js          # Trail rendering
-└── utils/                  # Cross-cutting utilities (5 modules)
+├── utils/                  # Cross-cutting utilities (6 modules)
     ├── cleanup.js         # Memory management
     ├── errorBoundary.js   # Error handling
     ├── errorTracker.js    # Error logging
     ├── keyboard.js        # Keyboard shortcuts
-    └── stats.js           # Performance monitoring
+    ├── shortcuts.js       # Keyboard shortcuts modal
+    └── settings.js        # User preferences storage
+└── video/                  # Video subsystem (3 modules)
+    ├── texture.js         # Video texture rendering
+    ├── recorder.js        # Canvas recording
+    └── controls.js        # Video playback controls
 ```
 
-**Total:** 23 JavaScript modules
+**Total:** 26 JavaScript modules
 
 ### `/docs` - Documentation
 All project documentation organized in one place.
@@ -134,6 +139,7 @@ npm-installed packages (not in version control).
 - **Audio subsystem** - All audio-related functionality
 - **Core subsystem** - 3D rendering and scene management
 - **Particles subsystem** - Visualization system
+- **Video subsystem** - Video texture rendering and recording
 - **Utils subsystem** - Shared utilities
 
 ### 2. Clear Ownership
@@ -253,6 +259,6 @@ npm run test:coverage  # Coverage report
 
 ---
 
-**Last Updated:** 2025-01-27  
+**Last Updated:** 2025-01-28  
 **Maintainer:** Development Team
 
