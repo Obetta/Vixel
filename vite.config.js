@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { cpSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { cpSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 
 export default defineConfig({
@@ -31,8 +31,8 @@ export default defineConfig({
   plugins: [
     {
       name: 'bundle-scripts',
-      buildStart() {
-        // Run bundle script before build
+      buildEnd() {
+        // Run bundle script after build
         console.log('Running bundle script...');
         execSync('node scripts/bundle-scripts.js', { stdio: 'inherit' });
       }
@@ -59,6 +59,14 @@ export default defineConfig({
         // Copy lib directory
         const distLib = resolve(__dirname, 'dist', 'lib');
         cpSync(resolve(__dirname, 'lib'), distLib, { recursive: true });
+        
+        // Copy preScannerWorker.js (Web Worker must be separate file)
+        const distJsAudio = resolve(__dirname, 'dist', 'js', 'audio');
+        mkdirSync(distJsAudio, { recursive: true });
+        cpSync(
+          resolve(__dirname, 'js', 'audio', 'preScannerWorker.js'),
+          resolve(distJsAudio, 'preScannerWorker.js')
+        );
         
         // Copy html directory if it exists
         const srcHtml = resolve(__dirname, 'html');
