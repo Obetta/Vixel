@@ -7,11 +7,26 @@ All notable changes to Vixel will be documented in this file.
 ## [Unreleased] - In Development
 
 ### Added
-- **Settings system** (`js/utils/settings.js`) - Persistent user preferences
-  - Recording bitrate control (1-8 Mbps)
-  - Target frame rate selection (24/30/60 fps)
-  - Settings modal with Save As dialog integration
-  - localStorage persistence for preferences
+- **Live microphone/line-in input** (`js/audio/microphone.js`) - Real-time audio input support
+  - `getUserMedia()` microphone access with device selection
+  - `MediaStreamAudioSourceNode` integration with shared audio processor
+  - Microphone toggle button with active state indicator
+  - Input device selector (enumerates available microphones/line-in devices)
+  - Real-time input level meter with color-coded visualization
+  - Low-latency FFT size (1024) for live input
+  - Pre-scanning automatically skipped for live input
+  - Device enumeration without permission request (only requests when mic starts)
+- **Shared audio processing chain** (`js/audio/processor.js`) - Unified audio processing for all sources
+  - Compressor/limiter applies to both microphone and file playback
+  - Gain control, threshold, ratio, knee, attack, release settings
+  - Configurable frequency smoothing
+  - Real-time parameter adjustment via settings
+- **Enhanced settings system** (`js/utils/settings.js`) - Cursor-style settings interface
+  - Left sidebar navigation with section icons
+  - Consolidated Input settings (device, gain, compressor/limiter, smoothing)
+  - Recording settings (bitrate, FPS, format)
+  - Settings modal no longer triggers microphone access on open
+  - Settings apply to all audio sources (mic + files)
 - **Video file support** - Full video texture rendering and controls
   - Video file loading with audio extraction for visualization
   - Fullscreen video texture background behind particle field
@@ -39,11 +54,17 @@ All notable changes to Vixel will be documented in this file.
 - Performance stats moved to dedicated bottom section in left nav
 - Recording format selector with auto-detection
 - Video controls hidden by default, shown for video files
+- **Analyzer supports configurable FFT size** - 1024 for microphone (low latency), 2048 for files (higher resolution)
+- **Settings UI redesigned** - Cursor-style left sidebar navigation replaces top tabs
+- **Audio processing unified** - Compressor/limiter settings apply to all audio sources via shared processor
+- **Microphone integration** - All audio sources route through shared processing chain
 
 ### Fixed
 - Video texture cleanup on file change
 - Audio context exposure for recording
 - Media element type detection for video vs audio files
+- **Settings modal no longer triggers microphone access** - Device enumeration happens without requesting permission when opening settings
+- **Microphone level meter fixed** - Now uses time-domain data instead of frequency data for accurate level detection
 
 ---
 

@@ -9,12 +9,14 @@ Transform your music into mesmerizing 3D particle animations with real-time freq
 ## ✨ Features
 
 - **Real-time FFT analysis** - 8-band frequency visualization
+- **Live microphone input** - Real-time visualization from microphone or line-in
 - **Dynamic motion** - Perlin noise, radial fields, and fluid trails
 - **Beat detection** - Visual pulses synchronized to kick/bass
 - **Background pre-scanning** - Enhanced placement through full-track analysis
 - **Video file support** - Load videos with audio extraction and fullscreen texture background
 - **Video recording** - Save your visualizations as WebM files with audio
 - **Advanced video controls** - Frame stepping, segment looping, opacity, blend modes
+- **Audio processing** - Configurable compressor/limiter for all audio sources
 - **Intuitive controls** - Keyboard shortcuts and mouse navigation
 
 ---
@@ -30,7 +32,9 @@ Transform your music into mesmerizing 3D particle animations with real-time freq
 
 2. **Open** `http://localhost:8000` in your browser
 
-3. **Drag & drop** an audio or video file to visualize
+3. **Use audio input:**
+   - **Drag & drop** an audio or video file to visualize, OR
+   - **Click "Start Microphone"** for live input visualization
 
 No build process required. Deploy as-is to any static hosting service.
 
@@ -55,12 +59,25 @@ No build process required. Deploy as-is to any static hosting service.
 - Choose save location (modern browsers) or auto-download
 - Format: WebM (VP9/VP8/H.264) with Opus audio
 
+**Microphone Input:**
+- Click "Start Microphone" button to begin live input
+- Select input device in Settings > Input
+- Real-time input level meter
+- Low-latency visualization (1024 FFT size)
+- Configure gain and compressor/limiter in Settings
+
 **Video Files:**
 - Supports MP4, WebM, MOV video files
 - Toggle video background visibility
 - Frame-by-frame stepping and scrubbing
 - Segment looping between custom time points
 - Adjustable opacity, scale, and blend modes
+
+**Settings:**
+- Cursor-style left sidebar navigation
+- Input settings: device, gain, compressor/limiter, smoothing
+- Recording settings: bitrate, frame rate, format
+- All audio processing applies to both microphone and file playback
 
 ---
 

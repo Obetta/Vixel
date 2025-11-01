@@ -136,7 +136,13 @@ window.VixelAudioLoader = (function() {
       
       try {
         sourceNode = audioCtx.createMediaElementSource(mediaEl);
-        sourceNode.connect(analyser);
+        // Connect through processor if available, otherwise direct to analyser
+        if (window.VixelAudioProcessor && window.VixelAudioProcessor.getInputNode) {
+          const processorInput = window.VixelAudioProcessor.getInputNode();
+          sourceNode.connect(processorInput);
+        } else {
+          sourceNode.connect(analyser);
+        }
         analyser.connect(audioCtx.destination);
       } catch (err) {
         throw new Error('Failed to connect audio source. Please try another file.');

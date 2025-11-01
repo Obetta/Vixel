@@ -212,54 +212,6 @@
         </div>
       </div>
 
-      <!-- Recording Section -->
-      <div class="section recording-section">
-        <h3 class="section-title">Recording</h3>
-        <div class="section-content">
-          <div class="control-group">
-            <div class="control-group-content">
-              <div class="control">
-                <label for="recordingIncludeGrid" class="checkbox-label">
-                  <input id="recordingIncludeGrid" type="checkbox" checked aria-label="Include grid in recording" />
-                  <span>Include Grid in Recording</span>
-                </label>
-              </div>
-              <div class="control">
-                <div class="control-header">
-                  <label for="recordingFormat">Video Format</label>
-                  <span class="control-value" id="recordingFormatValue">Auto</span>
-                </div>
-                <select id="recordingFormat" aria-label="Recording video format">
-                  <option value="auto">Auto (Best Available)</option>
-                  <option value="webm-vp9">WebM (VP9)</option>
-                  <option value="webm-vp8">WebM (VP8)</option>
-                  <option value="mp4-h264">MP4 (H.264) - Safari Only</option>
-                </select>
-                <div class="control-desc" id="recordingFormatDesc">Auto detects best format for your browser</div>
-              </div>
-            </div>
-          </div>
-          <div class="recording-controls">
-            <button id="recordBtn" class="record-btn" aria-label="Start recording">
-              <svg id="recordIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="8"/>
-              </svg>
-              <span id="recordLabel">Record</span>
-            </button>
-            <button id="stopRecordBtn" class="stop-record-btn hidden" aria-label="Stop recording">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="6" width="12" height="12" rx="2"/>
-              </svg>
-              <span>Stop</span>
-            </button>
-            <div id="recordingStatus" class="recording-status hidden">
-              <span class="recording-indicator">●</span>
-              <span id="recordingTime">0:00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Performance Stats Section -->
       <div class="section performance-stats-section">
         <h3 class="section-title">Performance</h3>
@@ -278,6 +230,11 @@
         <div class="section-content">
           <div class="player-card">
             <div class="player-controls">
+              <button id="recordBtn" class="record-btn-inline" aria-label="Start recording" title="Record">
+                <svg id="recordIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="8"/>
+                </svg>
+              </button>
               <button id="playPauseBtn" class="play-pause-btn" aria-label="Play/Pause">
                 <svg id="playIcon" width="24" height="24" viewBox="0 0 16 16" fill="none">
                   <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
@@ -404,6 +361,36 @@
             </div>
           </div>
           
+          <!-- Microphone Input Section -->
+          <div class="microphone-section">
+            <div class="section-title">Microphone Input</div>
+            <div class="section-content">
+              <div class="microphone-controls">
+                <button id="micToggleBtn" class="mic-toggle-btn" aria-label="Toggle microphone">
+                  <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                  <span id="micToggleLabel">Start Microphone</span>
+                </button>
+                <div class="mic-info hidden" id="micInfo">
+                  <div class="control">
+                    <div class="control-header">
+                      <label>Input Level</label>
+                      <span class="control-value" id="micLevelValue">0%</span>
+                    </div>
+                    <div class="mic-level-meter">
+                      <div class="mic-level-bar" id="micLevelBar"></div>
+                    </div>
+                    <div class="control-desc">Current input level</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div class="drop-zone-container" id="dropZone">
             <input id="fileInput" type="file" accept="audio/*,video/*" />
             <div class="drop-zone-content">
@@ -477,11 +464,13 @@
   <script src="./js/utils/settings.js"></script>
   <!-- Audio modules (load in dependency order) -->
   <script src="./js/audio/storage.js"></script>
-  <script src="./js/audio/loader.js"></script>
   <script src="./js/audio/analyzer.js"></script>
+  <script src="./js/audio/processor.js"></script>
+  <script src="./js/audio/loader.js"></script>
   <script src="./js/audio/beatDetection.js"></script>
   <script src="./js/audio/preScanner.js"></script>
   <script src="./js/audio/player.js"></script>
+  <script src="./js/audio/microphone.js"></script>
   <script src="./js/audio/ui.js"></script>
   <script src="./js/audio/index.js"></script>
   <!-- Particle modules (load in dependency order) -->
@@ -579,27 +568,137 @@
           </svg>
         </button>
       </div>
-      <div class="settings-list">
-        <div class="settings-section">
-          <h3 class="settings-section-title">Recording</h3>
-          <div class="setting-item">
-            <label for="settingsRecordingBitrate">Recording Bitrate</label>
-            <div class="setting-control">
-              <input id="settingsRecordingBitrate" type="range" min="1000000" max="8000000" step="500000" value="2500000" />
-              <span class="setting-value" id="settingsBitrateValue">2.5 Mbps</span>
+      <div class="settings-container">
+        <div class="settings-sidebar">
+          <nav class="settings-nav">
+            <button class="settings-nav-item active" data-section="input" aria-label="Input settings">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              </svg>
+              <span>Input</span>
+            </button>
+            <button class="settings-nav-item" data-section="recording" aria-label="Recording settings">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="8"></circle>
+              </svg>
+              <span>Recording</span>
+            </button>
+          </nav>
+        </div>
+        <div class="settings-main">
+          <!-- Input Section -->
+          <div class="settings-section-content active" id="settingsSectionInput">
+            <h3 class="settings-section-title">Input</h3>
+            <div class="setting-item">
+              <label for="settingsMicDevice">Input Device</label>
+              <div class="setting-control">
+                <select id="settingsMicDevice" aria-label="Microphone device selector">
+                  <option value="">Default Device</option>
+                </select>
+              </div>
+              <div class="setting-desc">Select your input device (applies to microphone input)</div>
             </div>
-            <div class="setting-desc">Lower = smaller files, Higher = better quality</div>
+            <div class="setting-item">
+              <label for="settingsAudioGain">Gain</label>
+              <div class="setting-control">
+                <input id="settingsAudioGain" type="range" min="0" max="2" step="0.01" value="1.0" 
+                       aria-label="Audio gain" />
+                <span class="setting-value" id="settingsAudioGainValue">100%</span>
+              </div>
+              <div class="setting-desc">Master gain control for all audio sources</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsAudioSmoothing">Smoothing</label>
+              <div class="setting-control">
+                <input id="settingsAudioSmoothing" type="range" min="0" max="1" step="0.01" value="0.6" 
+                       aria-label="Frequency smoothing" />
+                <span class="setting-value" id="settingsAudioSmoothingValue">60%</span>
+              </div>
+              <div class="setting-desc">Frequency analysis smoothing (affects visualization responsiveness)</div>
+            </div>
+            <h4 class="settings-subsection-title">Compressor/Limiter</h4>
+            <div class="setting-item">
+              <label for="settingsAudioThreshold">Threshold</label>
+              <div class="setting-control">
+                <input id="settingsAudioThreshold" type="range" min="-60" max="0" step="1" value="-12" 
+                       aria-label="Compressor threshold" />
+                <span class="setting-value" id="settingsAudioThresholdValue">-12 dB</span>
+              </div>
+              <div class="setting-desc">Level at which compression begins</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsAudioRatio">Ratio</label>
+              <div class="setting-control">
+                <input id="settingsAudioRatio" type="range" min="1" max="20" step="0.5" value="20" 
+                       aria-label="Compressor ratio" />
+                <span class="setting-value" id="settingsAudioRatioValue">20:1</span>
+              </div>
+              <div class="setting-desc">Compression ratio (higher = more limiting)</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsAudioKnee">Knee</label>
+              <div class="setting-control">
+                <input id="settingsAudioKnee" type="range" min="0" max="40" step="1" value="0" 
+                       aria-label="Compressor knee" />
+                <span class="setting-value" id="settingsAudioKneeValue">0 dB</span>
+              </div>
+              <div class="setting-desc">Softness of compression curve (0 = hard knee)</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsAudioAttack">Attack</label>
+              <div class="setting-control">
+                <input id="settingsAudioAttack" type="range" min="0" max="1" step="0.001" value="0.001" 
+                       aria-label="Compressor attack time" />
+                <span class="setting-value" id="settingsAudioAttackValue">1 ms</span>
+              </div>
+              <div class="setting-desc">How quickly compression engages</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsAudioRelease">Release</label>
+              <div class="setting-control">
+                <input id="settingsAudioRelease" type="range" min="0" max="1" step="0.01" value="0.1" 
+                       aria-label="Compressor release time" />
+                <span class="setting-value" id="settingsAudioReleaseValue">100 ms</span>
+              </div>
+              <div class="setting-desc">How quickly compression disengages</div>
+            </div>
           </div>
-          <div class="setting-item">
-            <label for="settingsRecordingFPS">Target Frame Rate</label>
-            <div class="setting-control">
-              <select id="settingsRecordingFPS">
-                <option value="24">24 fps</option>
-                <option value="30" selected>30 fps</option>
-                <option value="60">60 fps</option>
-              </select>
+          
+          <!-- Recording Section -->
+          <div class="settings-section-content" id="settingsSectionRecording">
+            <h3 class="settings-section-title">Recording</h3>
+            <div class="setting-item">
+              <label for="settingsRecordingBitrate">Recording Bitrate</label>
+              <div class="setting-control">
+                <input id="settingsRecordingBitrate" type="range" min="1000000" max="8000000" step="500000" value="2500000" />
+                <span class="setting-value" id="settingsBitrateValue">2.5 Mbps</span>
+              </div>
+              <div class="setting-desc">Lower = smaller files, Higher = better quality</div>
             </div>
-            <div class="setting-desc">Higher FPS increases file size</div>
+            <div class="setting-item">
+              <label for="settingsRecordingFPS">Target Frame Rate</label>
+              <div class="setting-control">
+                <select id="settingsRecordingFPS">
+                  <option value="24">24 fps</option>
+                  <option value="30" selected>30 fps</option>
+                  <option value="60">60 fps</option>
+                </select>
+              </div>
+              <div class="setting-desc">Higher FPS increases file size</div>
+            </div>
+            <div class="setting-item">
+              <label for="settingsRecordingFormat">Video Format</label>
+              <div class="setting-control">
+                <select id="settingsRecordingFormat">
+                  <option value="auto">Auto (Best Available)</option>
+                  <option value="webm-vp9">WebM (VP9)</option>
+                  <option value="webm-vp8">WebM (VP8)</option>
+                  <option value="mp4-h264">MP4 (H.264) - Safari Only</option>
+                </select>
+              </div>
+              <div class="setting-desc">Auto detects best format for your browser</div>
+            </div>
           </div>
         </div>
       </div>

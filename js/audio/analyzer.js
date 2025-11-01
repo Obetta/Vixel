@@ -23,6 +23,26 @@ window.VixelAudioAnalyzer = (function() {
     return { audioCtx, analyser };
   }
 
+  function setFFTSize(fftSize) {
+    if (!analyser) return;
+    analyser.fftSize = fftSize;
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+  }
+
+  function getFFTSize() {
+    return analyser ? analyser.fftSize : DEFAULT_FFT_SIZE;
+  }
+
+  function setSmoothing(value) {
+    if (analyser) {
+      analyser.smoothingTimeConstant = value;
+    }
+  }
+
+  function getSmoothing() {
+    return analyser ? analyser.smoothingTimeConstant : 0.6;
+  }
+
   function bandRanges(sampleRate, fftSize) {
     // Compute 8 frequency bands mapping to musical elements:
     // Band 0: Sub-bass (20-60Hz) - Kick drum fundamental
@@ -84,10 +104,15 @@ window.VixelAudioAnalyzer = (function() {
 
   return {
     initialize,
+    setFFTSize,
+    getFFTSize,
+    setSmoothing,
+    getSmoothing,
     computeBands,
     getBands,
     getFrequencyDistribution,
-    NUM_BANDS
+    NUM_BANDS,
+    DEFAULT_FFT_SIZE
   };
 })();
 

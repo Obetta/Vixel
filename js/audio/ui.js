@@ -468,6 +468,94 @@ window.VixelAudioUI = (function() {
     refreshTrackList();
   }
 
+  function setupMicrophoneControls(onToggle, onDeviceChange, onGainChange) {
+    const micToggleBtn = document.getElementById('micToggleBtn');
+    const micInfo = document.getElementById('micInfo');
+    
+    if (!micToggleBtn) return;
+
+    // Toggle button only - device and gain are now in settings modal
+    micToggleBtn.addEventListener('click', async () => {
+      if (onToggle) {
+        await onToggle();
+      }
+    });
+  }
+
+  function updateMicToggleButton(isActive) {
+    const micToggleBtn = document.getElementById('micToggleBtn');
+    const micToggleLabel = document.getElementById('micToggleLabel');
+    const micInfo = document.getElementById('micInfo');
+    
+    if (!micToggleBtn || !micToggleLabel) return;
+
+    if (isActive) {
+      micToggleBtn.classList.add('active');
+      micToggleLabel.textContent = 'Stop Microphone';
+      if (micInfo) micInfo.classList.remove('hidden');
+    } else {
+      micToggleBtn.classList.remove('active');
+      micToggleLabel.textContent = 'Start Microphone';
+      if (micInfo) micInfo.classList.add('hidden');
+    }
+  }
+
+  function updateMicLevel(level) {
+    const micLevelBar = document.getElementById('micLevelBar');
+    const micLevelValue = document.getElementById('micLevelValue');
+    
+    if (micLevelBar) {
+      const percent = Math.min(100, Math.round(level * 100));
+      micLevelBar.style.width = `${percent}%`;
+      
+      // Color coding: green (low), yellow (mid), red (high)
+      if (percent < 50) {
+        micLevelBar.style.backgroundColor = '#10b981'; // green
+      } else if (percent < 85) {
+        micLevelBar.style.backgroundColor = '#f59e0b'; // yellow
+      } else {
+        micLevelBar.style.backgroundColor = '#ef4444'; // red
+      }
+    }
+    
+    if (micLevelValue) {
+      micLevelValue.textContent = `${Math.min(100, Math.round(level * 100))}%`;
+    }
+  }
+
+  async function populateMicDevices() {
+    const micDevice = document.getElementById('micDevice');
+    if (!micDevice || !window.VixelAudioMicrophone) return;
+
+    try {
+      // Only request permission if microphone is active
+      const requestPermission = window.VixelAudioMicrophone.isMicrophoneActive();
+      const devices = await window.VixelAudioMicrophone.getDevices(requestPermission);
+      const currentValue = micDevice.value;
+      
+      // Clear existing options except default
+      micDevice.innerHTML = '<option value="">Default Device</option>';
+      
+      // Add devices
+      devices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label;
+        micDevice.appendChild(option);
+      });
+      
+      // Restore selection if possible
+      if (currentValue) {
+        const option = Array.from(micDevice.options).find(opt => opt.value === currentValue);
+        if (option) {
+          micDevice.value = currentValue;
+        }
+      }
+    } catch (err) {
+      console.error('[UI] Failed to populate microphone devices:', err);
+    }
+  }
+
   return {
     initUI,
     updateTimeDisplay,
@@ -483,7 +571,11 @@ window.VixelAudioUI = (function() {
     updateProgress,
     showError,
     refreshTrackList,
-    setupRecentTracks
+    setupRecentTracks,
+    setupMicrophoneControls,
+    updateMicToggleButton,
+    updateMicLevel,
+    populateMicDevices
   };
 })();
 

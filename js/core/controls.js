@@ -181,29 +181,54 @@ window.VixelControls = (function () {
 
   function setupRecordingControls(field, world) {
     const recordBtn = document.getElementById('recordBtn');
-    const stopRecordBtn = document.getElementById('stopRecordBtn');
-    const recordingStatus = document.getElementById('recordingStatus');
-    const recordingTime = document.getElementById('recordingTime');
-    const recordingIncludeGrid = document.getElementById('recordingIncludeGrid');
-    const recordingFormat = document.getElementById('recordingFormat');
+    const timeSlider = document.getElementById('timeSlider');
     
-    let recordingInterval = null;
     let originalGridVisibility = {};
+    let isRecording = false;
     
-    if (!recordBtn || !stopRecordBtn) return;
-    
-    // Setup format selector display update
-    if (recordingFormat) {
-      recordingFormat.addEventListener('change', () => {
-        const formatValue = document.getElementById('recordingFormatValue');
-        if (formatValue) {
-          const selectedOption = recordingFormat.options[recordingFormat.selectedIndex];
-          formatValue.textContent = selectedOption.textContent.replace(/\(.*?\)/g, '').trim();
-        }
-      });
-    }
+    if (!recordBtn) return;
 
     recordBtn.addEventListener('click', async () => {
+      // Toggle: if already recording, stop it
+      if (isRecording) {
+        // Stop recording
+        if (!window.VixelRecorder) return;
+        
+        const blob = await window.VixelRecorder.stopRecording();
+        
+        // Restore original visibility states
+        const grid1 = world.getObjectByName('vixel-grid-plane');
+        const grid2 = world.getObjectByName('vixel-grid-plane-2');
+        const axes = world.getObjectByName('vixel-axes-helper');
+        
+        if (grid1) grid1.visible = originalGridVisibility.grid1;
+        if (grid2) grid2.visible = originalGridVisibility.grid2;
+        if (axes) axes.visible = originalGridVisibility.axes;
+        
+        // Update UI - remove recording styling
+        timeSlider?.classList.remove('recording');
+        if (document.getElementById('currentTime')) {
+          document.getElementById('currentTime').classList.remove('recording');
+        }
+        if (document.getElementById('playPauseBtn')) {
+          document.getElementById('playPauseBtn').classList.remove('recording');
+        }
+        
+        isRecording = false;
+        
+        // Download the recording
+        if (blob) {
+          const filename = `vixel-recording-${Date.now()}`;
+          const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+          console.log(`[Recording] Video ready: ${fileSizeMB} MB`);
+          console.log(`[Recording] Format: WebM with ${blob.type.includes('vp9') ? 'VP9' : 'VP8'} video codec`);
+          
+          await window.VixelRecorder.downloadRecording(blob, filename);
+        }
+        return;
+      }
+      
+      // Start recording
       if (!window.VixelRecorder) {
         console.error('[Recording] VixelRecorder not available');
         return;
@@ -228,14 +253,16 @@ window.VixelControls = (function () {
       if (grid2) originalGridVisibility.grid2 = grid2.visible;
       if (axes) originalGridVisibility.axes = axes.visible;
 
-      // Apply recording visibility settings
+      // Apply recording visibility settings from modal
+      const recordingIncludeGrid = document.getElementById('settingsRecordingIncludeGrid');
       const includeGrid = recordingIncludeGrid?.checked ?? true;
       if (grid1) grid1.visible = includeGrid;
       if (grid2) grid2.visible = includeGrid;
       if (axes) axes.visible = includeGrid;
 
-      // Determine MIME type based on format selection
+      // Determine MIME type based on format selection from modal
       let mimeType = 'auto';
+      const recordingFormat = document.getElementById('settingsRecordingFormat');
       if (recordingFormat) {
         switch(recordingFormat.value) {
           case 'webm-vp9':
@@ -254,9 +281,17 @@ window.VixelControls = (function () {
         }
       }
 
-      // Get settings
+      // Get settings from modal
       const bitrate = window.VixelSettings ? window.VixelSettings.getRecordingBitrate() : 2500000;
       const fps = window.VixelSettings ? window.VixelSettings.getRecordingFPS() : 30;
+
+      // Auto-play audio when recording starts
+      if (mediaElement && window.VixelAudioPlayer) {
+        const isPlaying = window.VixelAudioPlayer.getPlaying();
+        if (!isPlaying) {
+          await window.VixelAudioPlayer.togglePlay();
+        }
+      }
 
       // Start recording
       const success = await window.VixelRecorder.startRecording(canvas, mediaElement, {
@@ -267,62 +302,20 @@ window.VixelControls = (function () {
       });
 
       if (success) {
-        // Update UI
-        recordBtn.classList.add('hidden');
-        stopRecordBtn.classList.remove('hidden');
-        recordingStatus?.classList.remove('hidden');
-        
-        // Update time every second
-        recordingInterval = setInterval(() => {
-          const duration = window.VixelRecorder.getRecordingDuration();
-          const minutes = Math.floor(duration / 60);
-          const seconds = Math.floor(duration % 60);
-          if (recordingTime) {
-            recordingTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          }
-        }, 1000);
+        isRecording = true;
+        // Update UI - add recording class for styling
+        timeSlider?.classList.add('recording');
+        if (document.getElementById('currentTime')) {
+          document.getElementById('currentTime').classList.add('recording');
+        }
+        if (document.getElementById('playPauseBtn')) {
+          document.getElementById('playPauseBtn').classList.add('recording');
+        }
       } else {
         // Restore original visibility on failure
         if (grid1) grid1.visible = originalGridVisibility.grid1;
         if (grid2) grid2.visible = originalGridVisibility.grid2;
         if (axes) axes.visible = originalGridVisibility.axes;
-      }
-    });
-
-    stopRecordBtn.addEventListener('click', async () => {
-      if (!window.VixelRecorder) return;
-
-      // Stop recording
-      const blob = await window.VixelRecorder.stopRecording();
-
-      // Restore original visibility states
-      const grid1 = world.getObjectByName('vixel-grid-plane');
-      const grid2 = world.getObjectByName('vixel-grid-plane-2');
-      const axes = world.getObjectByName('vixel-axes-helper');
-      
-      if (grid1) grid1.visible = originalGridVisibility.grid1;
-      if (grid2) grid2.visible = originalGridVisibility.grid2;
-      if (axes) axes.visible = originalGridVisibility.axes;
-
-      // Clear interval
-      if (recordingInterval) {
-        clearInterval(recordingInterval);
-        recordingInterval = null;
-      }
-
-      // Update UI
-      recordBtn.classList.remove('hidden');
-      stopRecordBtn.classList.add('hidden');
-      recordingStatus?.classList.add('hidden');
-
-      // Download the recording
-      if (blob) {
-        const filename = `vixel-recording-${Date.now()}`;
-        const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-        console.log(`[Recording] Video ready: ${fileSizeMB} MB`);
-        console.log(`[Recording] Format: WebM with ${blob.type.includes('vp9') ? 'VP9' : 'VP8'} video codec`);
-        
-        await window.VixelRecorder.downloadRecording(blob, filename);
       }
     });
   }

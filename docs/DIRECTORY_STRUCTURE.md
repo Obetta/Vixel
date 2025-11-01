@@ -28,10 +28,12 @@ js/
 ├── init-overlay.js         # Loading overlay initialization
 ├── utils.js                # Shared utility functions
 ├── three-loader.js         # Three.js loading wrapper
-├── audio/                  # Audio subsystem (9 modules)
+├── audio/                  # Audio subsystem (11 modules)
 │   ├── index.js           # Audio orchestrator
 │   ├── loader.js          # File loading and validation
-│   ├── analyzer.js        # FFT analysis
+│   ├── analyzer.js        # FFT analysis (configurable FFT size)
+│   ├── processor.js       # Shared audio processing chain (compressor/limiter)
+│   ├── microphone.js      # Live microphone/line-in input support
 │   ├── beatDetection.js   # Beat/kick detection
 │   ├── player.js          # Playback control
 │   ├── preScanner.js      # Background analysis
@@ -55,14 +57,14 @@ js/
     ├── errorTracker.js    # Error logging
     ├── keyboard.js        # Keyboard shortcuts
     ├── shortcuts.js       # Keyboard shortcuts modal
-    └── settings.js        # User preferences storage
+    └── settings.js        # User preferences storage with Cursor-style navigation
 └── video/                  # Video subsystem (3 modules)
     ├── texture.js         # Video texture rendering
     ├── recorder.js        # Canvas recording
     └── controls.js        # Video playback controls
 ```
 
-**Total:** 26 JavaScript modules
+**Total:** 28 JavaScript modules
 
 ### `/docs` - Documentation
 All project documentation organized in one place.

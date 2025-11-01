@@ -437,11 +437,11 @@
       const isCollapsed = rightNav.classList.contains('collapsed');
       if (isCollapsed) {
         rightNav.classList.remove('collapsed');
-        trackToggleBtn.classList.remove('active');
+        trackToggleBtn.classList.add('active');
         document.body.classList.remove('right-nav-collapsed');
       } else {
         rightNav.classList.add('collapsed');
-        trackToggleBtn.classList.add('active');
+        trackToggleBtn.classList.remove('active');
         document.body.classList.add('right-nav-collapsed');
       }
       observeNav();
@@ -450,6 +450,9 @@
     // Set initial state
     if (rightNav.classList.contains('collapsed')) {
       document.body.classList.add('right-nav-collapsed');
+      trackToggleBtn.classList.remove('active');
+    } else {
+      trackToggleBtn.classList.add('active');
     }
     
     // Initial sync

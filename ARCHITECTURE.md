@@ -6,15 +6,16 @@ Technical documentation of the audio → visual pipeline.
 
 ## Pipeline
 
-1. **Audio Input** - File loading via `<audio>` element → Web Audio API
-2. **FFT Analysis** - `AnalyserNode` (2048 samples) → 8 log-spaced frequency bands
-3. **Normalization** - Magnitudes normalized (0-1) with peak-hold smoothing
-4. **Motion Weighting** - Per-band weight: `pow(f_norm, gamma)` where `gamma` ≈ 1.4
-5. **Motion Systems** - Linear drift (X/Y), Perlin oscillation (Z), radial field
-6. **Beat Detection** - Low-band threshold detection → size/push pulses
-7. **Trails** - Fullscreen fade quad + instanced vector rendering
-8. **Color** - Gradient sampled by amplitude
-9. **GPU Rendering** - `THREE.InstancedMesh` (single draw call)
+1. **Audio Input** - File loading via `<audio>` element OR live microphone/line-in via `getUserMedia()` → Web Audio API
+2. **Audio Processing** - Shared processor chain (gain + compressor/limiter) → applies to all sources
+3. **FFT Analysis** - `AnalyserNode` (2048 samples for files, 1024 for microphone) → 8 log-spaced frequency bands
+4. **Normalization** - Magnitudes normalized (0-1) with peak-hold smoothing
+5. **Motion Weighting** - Per-band weight: `pow(f_norm, gamma)` where `gamma` ≈ 1.4
+6. **Motion Systems** - Linear drift (X/Y), Perlin oscillation (Z), radial field
+7. **Beat Detection** - Low-band threshold detection → size/push pulses
+8. **Trails** - Fullscreen fade quad + instanced vector rendering
+9. **Color** - Gradient sampled by amplitude
+10. **GPU Rendering** - `THREE.InstancedMesh` (single draw call)
 
 ---
 
@@ -30,11 +31,14 @@ Audio → AnalyserNode (FFT) → 8 Bands → Normalize → Weight → Motion →
 
 ### Audio (`js/audio/`)
 - **loader.js** - File loading, drag-and-drop
-- **analyzer.js** - FFT → 8-band computation
+- **analyzer.js** - FFT → 8-band computation (configurable FFT size)
+- **processor.js** - Shared audio processing chain (compressor/limiter)
+- **microphone.js** - Live microphone/line-in input support
 - **beatDetection.js** - Kick/snare detection, BPM
 - **player.js** - Playback control
 - **ui.js** - UI controls
 - **preScanner.js** - Background full-track analysis
+- **storage.js** - IndexedDB file caching
 - **index.js** - Orchestrator
 
 ### Core (`js/core/`)
@@ -124,10 +128,10 @@ See `MODULARITY.md` for detailed architecture assessment.
 
 ## Future Enhancements
 
-- Web Workers for pre-scanning
+- Web Workers for pre-scanning ✅
 - IndexedDB caching for analysis results
-- Live microphone input support
-- Video texture support
+- Live microphone input support ✅
+- Video texture support ✅
 - ES6 module migration
 - TypeScript integration
 
