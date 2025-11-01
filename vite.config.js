@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { cpSync, existsSync } from 'fs';
 
 export default defineConfig({
+  base: './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -24,5 +26,26 @@ export default defineConfig({
   server: {
     port: 3000
   },
-  publicDir: false,
+  publicDir: 'public',
+  plugins: [
+    {
+      name: 'copy-static-assets',
+      closeBundle() {
+        // Copy lib directory
+        const distLib = resolve(__dirname, 'dist', 'lib');
+        cpSync(resolve(__dirname, 'lib'), distLib, { recursive: true });
+        
+        // Copy js directory
+        const distJs = resolve(__dirname, 'dist', 'js');
+        cpSync(resolve(__dirname, 'js'), distJs, { recursive: true });
+        
+        // Copy html directory if it exists
+        const srcHtml = resolve(__dirname, 'html');
+        if (existsSync(srcHtml)) {
+          const distHtml = resolve(__dirname, 'dist', 'html');
+          cpSync(srcHtml, distHtml, { recursive: true });
+        }
+      }
+    }
+  ],
 });
