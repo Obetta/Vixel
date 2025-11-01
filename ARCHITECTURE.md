@@ -1,142 +1,50 @@
 # Vixel Architecture
 
-Technical documentation of the audio → visual pipeline.
+**Audio → visual pipeline & module structure**
 
 ---
 
 ## Pipeline
 
-1. **Audio Input** - File loading via `<audio>` element OR live microphone/line-in via `getUserMedia()` → Web Audio API
-2. **Audio Processing** - Shared processor chain (gain + compressor/limiter) → applies to all sources
-3. **FFT Analysis** - `AnalyserNode` (2048 samples for files, 1024 for microphone) → 8 log-spaced frequency bands
-4. **Normalization** - Magnitudes normalized (0-1) with peak-hold smoothing
-5. **Motion Weighting** - Per-band weight: `pow(f_norm, gamma)` where `gamma` ≈ 1.4
-6. **Motion Systems** - Linear drift (X/Y), Perlin oscillation (Z), radial field
-7. **Beat Detection** - Low-band threshold detection → size/push pulses
-8. **Trails** - Fullscreen fade quad + instanced vector rendering
-9. **Color** - Gradient sampled by amplitude
-10. **GPU Rendering** - `THREE.InstancedMesh` (single draw call)
-
----
-
-## Data Flow
-
 ```
-Audio → AnalyserNode (FFT) → 8 Bands → Normalize → Weight → Motion → Render
+File/Mic → Processor → FFT (2048/1024) → 8 Bands → Normalize → Weight → Motion → Render
 ```
 
----
-
-## Module Structure
-
-### Audio (`js/audio/`)
-- **loader.js** - File loading, drag-and-drop
-- **analyzer.js** - FFT → 8-band computation (configurable FFT size)
-- **processor.js** - Shared audio processing chain (compressor/limiter)
-- **microphone.js** - Live microphone/line-in input support
-- **beatDetection.js** - Kick/snare detection, BPM
-- **player.js** - Playback control
-- **ui.js** - UI controls
-- **preScanner.js** - Background full-track analysis
-- **storage.js** - IndexedDB file caching
-- **index.js** - Orchestrator
-
-### Core (`js/core/`)
-- **scene.js** - Three.js renderer setup
-- **camera.js** - Camera + OrbitControls
-- **controls.js** - UI event handlers
-
-### Particles (`js/particles/`)
-- **geometry.js** - InstancedMesh construction
-- **spawning.js** - Particle activation
-- **placement.js** - Position calculation
-- **motion.js** - Physics simulation (Perlin flow)
-- **trails.js** - Trail rendering
-- **index.js** - VectorField orchestrator
+**Steps:** Audio input → Shared processor (gain/compressor) → AnalyserNode → 8 log-spaced bands → Peak-hold smoothing → Motion weighting (gamma≈1.4) → Perlin flow + radial fields → Beat pulses → InstancedMesh render
 
 ---
 
-## Pre-Scanning
+## Modules
 
-Background analysis of full track:
-- Maps frequency spectrum over time
-- Improves BPM accuracy
-- Enables better node placement
-- Phase 1: Background processing (✅ Complete)
-- Phase 2: IndexedDB caching (🔄 Next)
+### Audio (`js/audio/` - 11)
+**loader.js** - File/mic input, validation | **analyzer.js** - FFT→8 bands | **processor.js** - Gain/compressor chain | **microphone.js** - Live input | **beatDetection.js** - Kick/BPM | **player.js** - Playback | **preScanner.js** - Background analysis | **preScannerWorker.js** - Web Worker | **storage.js** - IndexedDB | **ui.js** - Controls | **index.js** - Orchestrator
+
+### Core (`js/core/` - 3)
+**scene.js** - Three.js setup | **camera.js** - Camera/OrbitControls | **controls.js** - UI handlers
+
+### Particles (`js/particles/` - 6)
+**geometry.js** - InstancedMesh | **spawning.js** - Activation | **placement.js** - Positions | **motion.js** - Perlin physics | **trails.js** - Rendering | **index.js** - VectorField
+
+### Utils (`js/utils/` - 6)
+**cleanup.js** - Memory | **errorBoundary.js** - Errors | **errorTracker.js** - Logging | **keyboard.js** - Shortcuts | **shortcuts.js** - Modal UI | **settings.js** - Preferences
+
+### Video (`js/video/` - 3)
+**texture.js** - Texture rendering | **recorder.js** - Canvas capture | **controls.js** - Playback
+
+---
+
+## Design
+
+**Communication:** Global namespace (`window.Vixel*`) + orchestrator (`main.js`) + events  
+**Benefits:** Clear separation, no circular deps, graceful errors  
+**TODO:** ES6 modules, dependency injection, TypeScript
 
 ---
 
 ## Performance
 
-- **Target:** 60 FPS with 1600+ particles
-- **GPU:** Single draw call via InstancedMesh
-- **Memory:** Proper cleanup, blob URL management
-- **Analysis:** 3-4 seconds for 3-minute song
+**Target:** 60 FPS @ 1600 particles | **GPU:** Single draw call | **Memory:** Cleanup + blob URL mgmt | **Analysis:** 3-4s per 3min track | **Browser:** Chrome 90+, FF 90+, Safari 14+, Edge 90+
 
 ---
 
-## Browser Support
-
-- Chrome 90+, Firefox 90+, Safari 14+, Edge 90+
-- Requires: Web Audio API, WebGL 2.0, InstancedMesh
-
----
-
-## Security Considerations
-
-### Content Security Policy (CSP)
-- Strict CSP with no `unsafe-inline` scripts
-- External scripts only from trusted CDNs
-- Blob URLs properly managed and revoked
-
-### File Handling
-- File type validation (audio/*, video/* only)
-- File size limits (500MB default, 1GB maximum)
-- Client-side only processing (no server uploads)
-- Proper error handling and user feedback
-
-### Memory Management
-- Comprehensive cleanup on page unload
-- Blob URL tracking and automatic revocation
-- Event listener cleanup
-- Animation frame cancellation
-
-See `SECURITY.md` for detailed security documentation.
-
-## Modularity
-
-### Current Architecture
-- **3 subsystems:** Audio, Core, Particles
-- **23 modules** with clear responsibilities
-- Global namespace pattern for browser compatibility
-- Dependency order management via HTML script loading
-
-### Strengths
-- Clear separation of concerns
-- No circular dependencies
-- Graceful error handling
-- Independent module evolution
-
-### Improvement Opportunities
-- Migrate to ES6 modules for better tree-shaking
-- Add dependency injection for testing
-- Implement configuration module
-- Consider TypeScript for type safety
-
-See `MODULARITY.md` for detailed architecture assessment.
-
-## Future Enhancements
-
-- Web Workers for pre-scanning ✅
-- IndexedDB caching for analysis results
-- Live microphone input support ✅
-- Video texture support ✅
-- ES6 module migration
-- TypeScript integration
-
----
-
-*For implementation details, see source code in `js/` modules.*  
-*For security information, see `SECURITY.md`.*  
-*For modularity assessment, see `MODULARITY.md`.*
+**Last updated:** 2025-01-29
