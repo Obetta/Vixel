@@ -40,11 +40,17 @@ export default defineConfig({
     {
       name: 'replace-script-tags',
       transformIndexHtml(html) {
+        // Replace three-loader and init-overlay in head
+        let result = html.replace(
+          /<script src="\.\/js\/three-loader\.js" defer><\/script>\s*<script src="\.\/js\/init-overlay\.js" defer><\/script>/,
+          ''
+        );
         // Replace all individual script tags (from utils.js to main.js) with bundled script
-        return html.replace(
+        result = result.replace(
           /<script src="\.\/js\/utils\.js"[\s\S]*?<script src="\.\/js\/main\.js" defer><\/script>/,
           '<script src="./js/bundle.js" defer></script>'
         );
+        return result;
       }
     },
     {
