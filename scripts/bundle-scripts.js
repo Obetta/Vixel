@@ -4,9 +4,10 @@
  * This is a workaround until scripts are converted to ES modules
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { minify } from 'terser';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -47,7 +48,7 @@ const scriptOrder = [
   'js/main.js',
 ];
 
-function bundleScripts() {
+async function bundleScripts() {
   console.log('Bundling scripts...');
   const bundled = scriptOrder
     .map(scriptPath => {
@@ -67,13 +68,24 @@ function bundleScripts() {
   const distJsDir = join(rootDir, 'dist', 'js');
   
   // Ensure directory exists
-  try {
-    require('fs').mkdirSync(distJsDir, { recursive: true });
-  } catch (e) {}
+  mkdirSync(distJsDir, { recursive: true });
   
-  writeFileSync(outputPath, bundled, 'utf-8');
-  console.log(`✓ Bundled ${scriptOrder.length} scripts into dist/js/bundle.js`);
+  // Minify the bundled code
+  console.log('Minifying bundle...');
+  const minified = await minify(bundled, {
+    compress: true,
+    mangle: true,
+    format: {
+      comments: false
+    }
+  });
+  
+  writeFileSync(outputPath, minified.code, 'utf-8');
+  console.log(`✓ Bundled and minified ${scriptOrder.length} scripts into dist/js/bundle.js`);
 }
 
-bundleScripts();
+bundleScripts().catch(err => {
+  console.error('Error bundling scripts:', err);
+  process.exit(1);
+});
 
