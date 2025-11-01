@@ -29,6 +29,7 @@ jobs:
         uses: treosh/lighthouse-ci-action@v9
         with:
           uploadArtifacts: true
+          artifactName: lighthouse_ci_results
           temporaryPublicStorage: true
           configPath: './lighthouserc.json'
 
