@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vixel Starter</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="description" content="Audio-reactive 3D vector field starter powered by Three.js" />
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' https://cdn.jsdelivr.net; 
+                 style-src 'self'; 
+                 img-src 'self' data: blob:; 
+                 media-src 'self' blob: data:;
+                 connect-src 'self' blob:;
+                 worker-src 'self' blob:;">
+  <script src="./js/three-loader.js"></script>
+  <script src="./js/init-overlay.js"></script>
+  <link rel="stylesheet" crossorigin href="/index.css">
+</head>
+<body>
+  <header class="top-nav">
+    <div class="brand">Vixel</div>
+    
+    <!-- Track Controls in Nav (shown when nav collapsed) - CENTER -->
+    <div class="track-controls-nav">
+      <button id="playPauseBtnNavCenter" class="play-pause-btn-nav-center" aria-label="Play/Pause">
+        <svg id="playIconNavCenter" width="24" height="24" viewBox="0 0 16 16" fill="none">
+          <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
+        </svg>
+        <svg id="pauseIconNavCenter" width="24" height="24" viewBox="0 0 16 16" fill="none" class="hidden">
+          <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
+          <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="loopBtnNavCenter" class="loop-btn-nav-center" aria-label="Toggle loop playback">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+      <span id="currentTimeNav" class="time-display-nav">0:00</span>
+      <input type="range" id="timeSliderNav" class="time-slider-nav" min="0" max="100" value="0" 
+             aria-label="Audio playback position" />
+      <span id="durationNav" class="time-display-nav">0:00</span>
+    </div>
+    
+    <!-- Right side controls -->
+    <div class="header-controls">
+      <button id="shortcutsBtn" class="header-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        <span>Shortcuts</span>
+      </button>
+      <a href="./html/tech-stack.html" class="tech-stack-link" aria-label="View Tech Stack">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+        </svg>
+        <span>Tech Stack</span>
+      </a>
+      <button id="trackToggleBtn" class="header-btn track-toggle-btn active" aria-label="Toggle track info" title="Toggle track info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8"></polygon>
+        </svg>
+        <span>Track</span>
+      </button>
+    </div>
+  </header>
+
+  <aside class="left-nav" role="complementary" aria-label="Control panel">
+    <div class="panel">
+      <!-- CONTROLS SECTION -->
+      <div class="section">
+        <h3 class="section-title">Controls</h3>
+        <div class="section-content">
+          <div class="control">
+            <div class="control-header">
+              <label for="trails">Trail Persistence</label>
+              <span class="control-value" id="trailsValue">60%</span>
+            </div>
+            <input id="trails" type="range" min="0" max="1" step="0.01" value="0.6" 
+                   aria-label="Trail Persistence" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60" />
+            <div class="control-desc" id="trails-desc">How long trails remain visible</div>
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="trailThickness">Trail Thickness</label>
+              <span class="control-value" id="trailThicknessValue" aria-live="polite">2</span>
+            </div>
+            <input id="trailThickness" type="range" min="1" max="10" step="1" value="2" 
+                   aria-label="Trail Thickness" aria-valuemin="1" aria-valuemax="10" aria-valuenow="2" 
+                   aria-describedby="trailThickness-desc" />
+            <div class="control-desc" id="trailThickness-desc">Line thickness (px)</div>
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="osc">Perlin Oscillation</label>
+              <span class="control-value" id="oscValue" aria-live="polite">0.70</span>
+            </div>
+            <input id="osc" type="range" min="0" max="1" step="0.01" value="0.7" 
+                   aria-label="Perlin Oscillation" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.7" 
+                   aria-describedby="osc-desc" />
+            <div class="control-desc" id="osc-desc">Perlin noise oscillation/flow intensity</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW SECTION -->
+      <div class="section">
+        <h3 class="section-title">View</h3>
+        <div class="section-content">
+          <!-- Camera Controls -->
+          <div class="control-group">
+            <div class="control-group-header">
+              <span class="control-group-label">Camera Controls</span>
+            </div>
+            <div class="control-group-content">
+              <div class="auto-spin-group">
+                <div class="auto-spin-header">
+                  <span class="auto-spin-label">Auto Spin</span>
+                  <button id="resetSpinBtn" class="reset-btn" type="button" 
+                          aria-label="Reset all auto spin values to zero" title="Reset all spin values">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="auto-spin-controls">
+                  <div class="control">
+                    <div class="control-header">
+                      <label for="spinX">X</label>
+                      <span class="control-value" id="spinXValue">0.00</span>
+                    </div>
+                    <input id="spinX" type="range" min="-2" max="2" step="0.01" value="0" 
+                           aria-label="Auto Spin X axis" aria-valuemin="-2" aria-valuemax="2" aria-valuenow="0" />
+                  </div>
+                  <div class="control">
+                    <div class="control-header">
+                      <label for="spinY">Y</label>
+                      <span class="control-value" id="spinYValue" aria-live="polite">0.00</span>
+                    </div>
+                    <input id="spinY" type="range" min="-2" max="2" step="0.01" value="0" 
+                           aria-label="Auto Spin Y axis" aria-valuemin="-2" aria-valuemax="2" aria-valuenow="0" />
+                  </div>
+                  <div class="control">
+                    <div class="control-header">
+                      <label for="spinZ">Z</label>
+                      <span class="control-value" id="spinZValue" aria-live="polite">0.00</span>
+                    </div>
+                    <input id="spinZ" type="range" min="-2" max="2" step="0.01" value="0" 
+                           aria-label="Auto Spin Z axis" aria-valuemin="-2" aria-valuemax="2" aria-valuenow="0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Display Options -->
+          <div class="control-group">
+            <div class="control-group-header">
+              <span class="control-group-label">Display Options</span>
+            </div>
+            <div class="control-group-content">
+              <div class="control">
+                <label for="showPlane" class="checkbox-label">
+                  <input id="showPlane" type="checkbox" checked aria-label="Show Plane/Grid" />
+                  <span>Show Plane/Grid</span>
+                </label>
+              </div>
+              <div class="control">
+                <label for="showPlane2" class="checkbox-label">
+                  <input id="showPlane2" type="checkbox" checked aria-label="Show Perpendicular Plane" />
+                  <span>Show Perpendicular Plane</span>
+                </label>
+              </div>
+              <div class="control">
+                <label for="showAxes" class="checkbox-label">
+                  <input id="showAxes" type="checkbox" checked aria-label="Show Axes" />
+                  <span>Show Axes</span>
+                </label>
+              </div>
+              <div class="control">
+                <label for="showTrails" class="checkbox-label">
+                  <input id="showTrails" type="checkbox" checked aria-label="Show Line Trails" />
+                  <span>Show Line Trails</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Stats Section -->
+      <div class="section performance-stats-section">
+        <h3 class="section-title">Performance</h3>
+        <div class="section-content">
+          <div id="vixel-stats-container"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <aside class="right-nav" role="complementary" aria-label="Audio player panel">
+    <div class="panel">
+      <!-- TRACK SECTION -->
+      <div class="section">
+        <h3 class="section-title">Track</h3>
+        <div class="section-content">
+          <div class="player-card">
+            <div class="player-controls">
+              <button id="playPauseBtn" class="play-pause-btn" aria-label="Play/Pause">
+                <svg id="playIcon" width="24" height="24" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
+                </svg>
+                <svg id="pauseIcon" width="24" height="24" viewBox="0 0 16 16" fill="none" class="hidden">
+                  <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
+                  <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
+                </svg>
+              </button>
+              <button id="loopBtn" class="loop-btn" aria-label="Toggle loop playback">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="player-info">
+              <div id="trackName" class="track-name">No track loaded</div>
+              <div class="time-controls">
+                <span id="currentTime" class="time-display">0:00</span>
+                <input type="range" id="timeSlider" class="time-slider" min="0" max="100" value="0" 
+                       aria-label="Audio playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" 
+                       aria-valuetext="0:00" />
+                <span id="duration" class="time-display">0:00</span>
+              </div>
+            </div>
+          </div>
+          <div class="drop-zone-container" id="dropZone">
+            <input id="fileInput" type="file" accept="audio/*,video/*" />
+            <div class="drop-zone-content">
+              <svg class="drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <p class="drop-text">Drag & drop audio/video here</p>
+              <p class="drop-or">or</p>
+              <button class="drop-upload-btn" type="button" aria-label="Browse and select audio or video file">Browse Files</button>
+            </div>
+          </div>
+          
+          <!-- Recent Tracks Section -->
+          <div class="recent-tracks-section hidden" id="recentTracksSection">
+            <div class="recent-tracks-header">
+              <h4 class="recent-tracks-title">Recent Tracks</h4>
+              <button id="clearTracksBtn" class="clear-tracks-btn" type="button" 
+                      aria-label="Clear all saved tracks" title="Clear all saved tracks">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="recent-tracks-list" id="recentTracksList">
+              <!-- Track items will be inserted here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage" role="main" aria-label="3D visualization canvas" id="main-content" tabindex="0">
+    <div class="camera-position" aria-hidden="true">
+      <div class="label">Camera</div>
+      <div class="value" id="cameraPosition">X: 0.00, Y: 0.00, Z: 0.00</div>
+    </div>
+    <div class="axis-legend" aria-hidden="true" aria-label="Axis legend">
+      <span class="x">X</span>
+      <span class="y">Y</span>
+      <span class="z">Z</span>
+    </div>
+    <div class="zoom-controls">
+      <button id="zoomIn" aria-label="Zoom in on 3D view" title="Zoom In">+</button>
+      <button id="zoomOut" aria-label="Zoom out on 3D view" title="Zoom Out">−</button>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Analyzing audio...</div>
+        <div class="loading-progress">
+          <div class="loading-progress-bar">
+            <div class="progress-fill" id="loadingProgressFill"></div>
+          </div>
+          <span id="loadingProgressText">0%</span>
+        </div>
+      </div>
+    </div>
+    <canvas id="stage"></canvas>
+  </main>
+
+  <script src="./js/utils.js"></script>
+  <script src="./js/utils/cleanup.js"></script>
+  <script src="./js/utils/errorTracker.js"></script>
+  <script src="./js/utils/errorBoundary.js"></script>
+  <script src="./js/utils/keyboard.js"></script>
+  <script src="./js/utils/shortcuts.js"></script>
+  <!-- Audio modules (load in dependency order) -->
+  <script src="./js/audio/storage.js"></script>
+  <script src="./js/audio/loader.js"></script>
+  <script src="./js/audio/analyzer.js"></script>
+  <script src="./js/audio/beatDetection.js"></script>
+  <script src="./js/audio/preScanner.js"></script>
+  <script src="./js/audio/player.js"></script>
+  <script src="./js/audio/ui.js"></script>
+  <script src="./js/audio/index.js"></script>
+  <!-- Particle modules (load in dependency order) -->
+  <script src="./js/particles/geometry.js"></script>
+  <script src="./js/particles/spawning.js"></script>
+  <script src="./js/particles/placement.js"></script>
+  <script src="./js/particles/motion.js"></script>
+  <script src="./js/particles/trails.js"></script>
+  <script src="./js/particles/index.js"></script>
+  <!-- Core modules -->
+  <script src="./js/core/scene.js"></script>
+  <script src="./js/core/camera.js"></script>
+  <script src="./js/core/controls.js"></script>
+  <!-- Main app -->
+  <script src="./js/main.js"></script>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="shortcutsModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Keyboard Shortcuts</h2>
+        <button id="closeShortcutsModal" class="modal-close-btn" aria-label="Close shortcuts">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="shortcuts-list">
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>Space</kbd>
+          </div>
+          <div class="shortcut-desc">Toggle playback</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>←</kbd> <kbd>→</kbd>
+          </div>
+          <div class="shortcut-desc">Seek through track</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>↑</kbd> <kbd>↓</kbd>
+          </div>
+          <div class="shortcut-desc">Adjust trail persistence</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>Q</kbd> <kbd>E</kbd>
+          </div>
+          <div class="shortcut-desc">Adjust oscillation</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>R</kbd>
+          </div>
+          <div class="shortcut-desc">Reset camera spin</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>0</kbd>
+          </div>
+          <div class="shortcut-desc">Reorient camera</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>F</kbd>
+          </div>
+          <div class="shortcut-desc">Toggle fullscreen</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
+            <kbd>Esc</kbd>
+          </div>
+          <div class="shortcut-desc">Close this dialog</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
