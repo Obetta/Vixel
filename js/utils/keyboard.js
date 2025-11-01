@@ -42,6 +42,15 @@ window.VixelKeyboard = (function() {
         return;
       }
 
+      // 0 - Reorient scene/camera to default position
+      if (e.key === '0' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        if (typeof window.reorientScene === 'function') {
+          window.reorientScene();
+        }
+        return;
+      }
+
       // F - Toggle fullscreen (only without modifier keys)
       if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
@@ -53,18 +62,8 @@ window.VixelKeyboard = (function() {
         return;
       }
 
-      // S - Screenshot (toggle stats display) (only without modifier keys)
-      if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        if (typeof window.toggleStatsDisplay === 'function') {
-          const showStats = document.getElementById('showStats');
-          if (showStats) {
-            showStats.checked = !showStats.checked;
-            showStats.dispatchEvent(new Event('change'));
-          }
-        }
-        return;
-      }
+      // S - Screenshot (stats are always visible now, so S key does nothing)
+      // Removed toggle functionality since stats are always visible in the right panel
 
       // Arrow keys for control adjustments
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {

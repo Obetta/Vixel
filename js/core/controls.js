@@ -104,14 +104,8 @@ window.VixelControls = (function () {
       field.setTrailsVisible(showTrails.checked);
     }
 
-    // Stats visibility toggle
-    const showStats = document.getElementById('showStats');
-    if (showStats) {
-      showStats.addEventListener('change', () => {
-        window.toggleStatsDisplay(showStats.checked);
-      });
-      // Initialize to checked state (show by default)
-      showStats.checked = true;
+    // Stats are always visible in the right panel now
+    if (typeof window.toggleStatsDisplay === 'function') {
       window.toggleStatsDisplay(true);
     }
 

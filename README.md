@@ -124,6 +124,7 @@ Vixel/
 - `↑` `↓` - Adjust trail persistence
 - `Q` `E` - Adjust oscillation intensity
 - `R` - Reset camera spin
+- `0` - Reorient camera to default position
 - `F` - Toggle fullscreen
 - `S` - Toggle performance stats
 - `Esc` - Close modals

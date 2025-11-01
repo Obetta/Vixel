@@ -19,12 +19,9 @@ window.VixelShortcuts = (function() {
     if (closeShortcutsModal && shortcutsModal) {
       const closeModal = () => {
         shortcutsModal.classList.add('hidden');
-        // Restore stats when modal closes
-        if (statsContainer && typeof window.toggleStatsDisplay === 'function') {
-          const showStats = document.getElementById('showStats');
-          if (showStats && showStats.checked) {
-            statsContainer.style.display = 'flex';
-          }
+        // Restore stats when modal closes (always show)
+        if (statsContainer) {
+          statsContainer.style.display = 'flex';
         }
       };
 
@@ -42,12 +39,9 @@ window.VixelShortcuts = (function() {
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && shortcutsModal && !shortcutsModal.classList.contains('hidden')) {
           shortcutsModal.classList.add('hidden');
-          // Restore stats if needed
-          if (statsContainer && typeof window.toggleStatsDisplay === 'function') {
-            const showStats = document.getElementById('showStats');
-            if (showStats && showStats.checked) {
-              statsContainer.style.display = 'flex';
-            }
+          // Restore stats (always show)
+          if (statsContainer) {
+            statsContainer.style.display = 'flex';
           }
         }
       });

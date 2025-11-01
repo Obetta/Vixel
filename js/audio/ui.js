@@ -17,6 +17,11 @@ window.VixelAudioUI = (function() {
     const durationEl = document.getElementById('duration');
     const timeSlider = document.getElementById('timeSlider');
     
+    // Header panel elements
+    const currentTimeHeader = document.getElementById('currentTimeHeader');
+    const durationHeader = document.getElementById('durationHeader');
+    const timeSliderHeader = document.getElementById('timeSliderHeader');
+    
     if (currentTimeEl) {
       currentTimeEl.textContent = formatTime(current);
     }
@@ -29,12 +34,38 @@ window.VixelAudioUI = (function() {
       timeSlider.max = duration;
       timeSlider.value = current;
     }
+    
+    // Update nav controls
+    const currentTimeNav = document.getElementById('currentTimeNav');
+    const durationNav = document.getElementById('durationNav');
+    const timeSliderNav = document.getElementById('timeSliderNav');
+    
+    if (currentTimeNav) {
+      currentTimeNav.textContent = formatTime(current);
+    }
+    
+    if (durationNav) {
+      durationNav.textContent = formatTime(duration);
+    }
+    
+    if (timeSliderNav && duration > 0) {
+      timeSliderNav.max = duration;
+      timeSliderNav.value = current;
+    }
   }
 
   function updateTrackName(fileName) {
     const trackNameEl = document.getElementById('trackName');
+    const trackNameNav = document.getElementById('trackNameNav');
+    
+    const displayName = fileName || 'No track loaded';
+    
     if (trackNameEl) {
-      trackNameEl.textContent = fileName || 'No track loaded';
+      trackNameEl.textContent = displayName;
+    }
+    
+    if (trackNameNav) {
+      trackNameNav.textContent = displayName;
     }
   }
 
@@ -221,10 +252,16 @@ window.VixelAudioUI = (function() {
   }
 
   function setupLoopToggle(onLoopChange) {
-    const toggle = document.getElementById('loopToggle');
-    if (toggle) {
-      toggle.addEventListener('change', (e) => {
-        if (onLoopChange) onLoopChange(e.target.checked);
+    const loopBtn = document.getElementById('loopBtn');
+    if (loopBtn) {
+      loopBtn.addEventListener('click', () => {
+        const isActive = loopBtn.classList.contains('active');
+        if (isActive) {
+          loopBtn.classList.remove('active');
+        } else {
+          loopBtn.classList.add('active');
+        }
+        if (onLoopChange) onLoopChange(!isActive);
       });
     }
   }

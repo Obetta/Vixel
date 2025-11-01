@@ -23,6 +23,32 @@
 <body>
   <header class="top-nav">
     <div class="brand">Vixel</div>
+    
+    <!-- Track Controls in Nav (shown when nav collapsed) - CENTER -->
+    <div class="track-controls-nav">
+      <button id="playPauseBtnNavCenter" class="play-pause-btn-nav-center" aria-label="Play/Pause">
+        <svg id="playIconNavCenter" width="24" height="24" viewBox="0 0 16 16" fill="none">
+          <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
+        </svg>
+        <svg id="pauseIconNavCenter" width="24" height="24" viewBox="0 0 16 16" fill="none" class="hidden">
+          <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
+          <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="loopBtnNavCenter" class="loop-btn-nav-center" aria-label="Toggle loop playback">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+      <span id="currentTimeNav" class="time-display-nav">0:00</span>
+      <input type="range" id="timeSliderNav" class="time-slider-nav" min="0" max="100" value="0" 
+             aria-label="Audio playback position" />
+      <span id="durationNav" class="time-display-nav">0:00</span>
+    </div>
+    
+    <!-- Right side controls -->
     <div class="header-controls">
       <button id="shortcutsBtn" class="header-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,6 +64,13 @@
         </svg>
         <span>Tech Stack</span>
       </a>
+      <button id="trackToggleBtn" class="header-btn track-toggle-btn active" aria-label="Toggle track info" title="Toggle track info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8"></polygon>
+        </svg>
+        <span>Track</span>
+      </button>
     </div>
   </header>
 
@@ -161,14 +194,16 @@
                   <span>Show Line Trails</span>
                 </label>
               </div>
-              <div class="control">
-                <label for="showStats" class="checkbox-label">
-                  <input id="showStats" type="checkbox" checked aria-label="Show Performance Stats" />
-                  <span>Show Performance Stats</span>
-                </label>
-              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Performance Stats Section -->
+      <div class="section performance-stats-section">
+        <h3 class="section-title">Performance</h3>
+        <div class="section-content">
+          <div id="vixel-stats-container"></div>
         </div>
       </div>
     </div>
@@ -181,15 +216,24 @@
         <h3 class="section-title">Track</h3>
         <div class="section-content">
           <div class="player-card">
-            <button id="playPauseBtn" class="play-pause-btn" aria-label="Play/Pause">
-              <svg id="playIcon" width="24" height="24" viewBox="0 0 16 16" fill="none">
-                <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
-              </svg>
-              <svg id="pauseIcon" width="24" height="24" viewBox="0 0 16 16" fill="none" class="hidden">
-                <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
-                <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
-              </svg>
-            </button>
+            <div class="player-controls">
+              <button id="playPauseBtn" class="play-pause-btn" aria-label="Play/Pause">
+                <svg id="playIcon" width="24" height="24" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 2L14 8L4 14V2Z" fill="currentColor"/>
+                </svg>
+                <svg id="pauseIcon" width="24" height="24" viewBox="0 0 16 16" fill="none" class="hidden">
+                  <rect x="4" y="2" width="3" height="12" fill="currentColor"/>
+                  <rect x="9" y="2" width="3" height="12" fill="currentColor"/>
+                </svg>
+              </button>
+              <button id="loopBtn" class="loop-btn" aria-label="Toggle loop playback">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
             <div class="player-info">
               <div id="trackName" class="track-name">No track loaded</div>
               <div class="time-controls">
@@ -199,10 +243,6 @@
                        aria-valuetext="0:00" />
                 <span id="duration" class="time-display">0:00</span>
               </div>
-              <label for="loopToggle" class="loop-toggle-label" title="Loop playback">
-                <input id="loopToggle" type="checkbox" />
-                <span class="loop-text">Loop Playback</span>
-              </label>
             </div>
           </div>
           <div class="drop-zone-container" id="dropZone">
@@ -343,6 +383,12 @@
         </div>
         <div class="shortcut-item">
           <div class="shortcut-keys">
+            <kbd>0</kbd>
+          </div>
+          <div class="shortcut-desc">Reorient camera</div>
+        </div>
+        <div class="shortcut-item">
+          <div class="shortcut-keys">
             <kbd>F</kbd>
           </div>
           <div class="shortcut-desc">Toggle fullscreen</div>
@@ -351,7 +397,7 @@
           <div class="shortcut-keys">
             <kbd>S</kbd>
           </div>
-          <div class="shortcut-desc">Toggle stats display</div>
+          <div class="shortcut-desc">Stats are always visible in the right panel</div>
         </div>
         <div class="shortcut-item">
           <div class="shortcut-keys">

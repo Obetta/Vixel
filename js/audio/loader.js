@@ -110,9 +110,9 @@ window.VixelAudioLoader = (function() {
         window.VixelCleanup.trackBlobURL(currentObjectURL);
       }
       mediaEl.src = currentObjectURL;
-      // Set loop from toggle (default to unchecked)
-      const loopToggle = document.getElementById('loopToggle');
-      mediaEl.loop = loopToggle ? loopToggle.checked : false;
+      // Set loop from button (default to unchecked)
+      const loopBtn = document.getElementById('loopBtn');
+      mediaEl.loop = loopBtn ? loopBtn.classList.contains('active') : false;
       
       // Wait for metadata to load with timeout
       await Promise.race([
