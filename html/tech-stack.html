@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tech Stack - Vixel</title>
+  <link rel="stylesheet" href="../style.css" />
+  <meta name="theme-color" content="#0b0f17" />
+  <style>
+    /* Tech Stack Specific Styles */
+    .tech-stack-page {
+      min-height: 100vh;
+      padding: 80px 40px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .tech-stack-header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .tech-stack-header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .tech-stack-header p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 40px;
+      transition: all 0.3s ease;
+      position: absolute;
+      top: 40px;
+      left: 40px;
+    }
+
+    .back-link:hover {
+      color: var(--accent2);
+      transform: translateX(-4px);
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+
+    .tech-category {
+      animation: fadeInUp 0.6s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .tech-category:nth-child(1) { animation-delay: 0.1s; }
+    .tech-category:nth-child(2) { animation-delay: 0.2s; }
+    .tech-category:nth-child(3) { animation-delay: 0.3s; }
+    .tech-category:nth-child(4) { animation-delay: 0.4s; }
+    .tech-category:nth-child(5) { animation-delay: 0.5s; }
+    .tech-category:nth-child(6) { animation-delay: 0.6s; }
+    .tech-category:nth-child(7) { animation-delay: 0.7s; }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--cardBorder);
+    }
+
+    .category-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(167, 139, 250, 0.2));
+      border-radius: 8px;
+      color: var(--accent);
+    }
+
+    .category-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    .tech-card {
+      background: var(--card);
+      border: 1px solid var(--cardBorder);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .tech-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .tech-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 32px rgba(125, 211, 252, 0.15), 0 0 0 1px rgba(125, 211, 252, 0.1);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .tech-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .tech-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .tech-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--fg);
+      margin: 0;
+    }
+
+    .tech-version {
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--cardBorder);
+    }
+
+    .tech-description {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .tech-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tech-feature {
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(125, 211, 252, 0.1);
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(125, 211, 252, 0.2);
+    }
+
+    .tech-logo {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      margin-right: 16px;
+      flex-shrink: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .tech-card-content {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .tech-info {
+      flex: 1;
+    }
+
+    .browser-support {
+      background: var(--card);
+      border: 1px solid var(--cardBorder);
+      border-radius: 16px;
+      padding: 32px;
+      margin-top: 40px;
+      animation: fadeInUp 0.6s ease-out 0.7s both;
+    }
+
+    .browser-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .browser-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      border: 1px solid var(--cardBorder);
+      transition: all 0.3s ease;
+    }
+
+    .browser-item:hover {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .browser-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .browser-name {
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    .browser-version {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .tech-stack-page {
+        padding: 60px 20px 20px;
+      }
+
+      .tech-stack-header h1 {
+        font-size: 32px;
+      }
+
+      .tech-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .back-link {
+        position: relative;
+        top: 0;
+        left: 0;
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="tech-stack-page">
+    <a href="./index.html" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to Vixel
+    </a>
+
+    <div class="tech-stack-header">
+      <h1>Tech Stack</h1>
+      <p>Powering the audio-reactive 3D vector field visualization with modern web technologies</p>
+    </div>
+
+    <div class="tech-grid">
+      <!-- Core Technologies -->
+      <div class="tech-category">
+        <div class="category-header">
+          <div class="category-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <h2 class="category-title">Core Technologies</h2>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(0, 216, 255, 0.2), rgba(0, 255, 154, 0.2)); color: #00d8ff;">3</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Three.js</h3>
+                <span class="tech-version">v0.160.1</span>
+              </div>
+              <p class="tech-description">
+                Powerful 3D graphics library for WebGL rendering. Powers the real-time particle system with efficient instanced mesh rendering.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">WebGL Rendering</li>
+                <li class="tech-feature">InstancedMesh</li>
+                <li class="tech-feature">OrbitControls</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(167, 139, 250, 0.2)); color: var(--accent);">JS</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Vanilla JavaScript</h3>
+                <span class="tech-version">ES6+</span>
+              </div>
+              <p class="tech-description">
+                Pure JavaScript with modern ES6+ features. No framework dependencies, ensuring fast performance and small bundle size.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">ES6 Modules</li>
+                <li class="tech-feature">Async/Await</li>
+                <li class="tech-feature">Classes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 159, 64, 0.2)); color: #ff6b6b;">🎵</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Web Audio API</h3>
+                <span class="tech-version">Native</span>
+              </div>
+              <p class="tech-description">
+                Real-time audio analysis using AnalyserNode for FFT frequency analysis. Enables responsive visualization synchronized with audio.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">FFT Analysis</li>
+                <li class="tech-feature">8-Band Spectrum</li>
+                <li class="tech-feature">Beat Detection</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Development Tools -->
+      <div class="tech-category">
+        <div class="category-header">
+          <div class="category-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+          </div>
+          <h2 class="category-title">Development Tools</h2>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(100, 108, 255, 0.2), rgba(167, 139, 250, 0.2)); color: #646cff;">V</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Vite</h3>
+                <span class="tech-version">v5.0.0</span>
+              </div>
+              <p class="tech-description">
+                Lightning-fast build tool and dev server. Provides instant hot module replacement and optimized production builds.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">HMR</li>
+                <li class="tech-feature">Fast Builds</li>
+                <li class="tech-feature">ESM Native</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(118, 75, 162, 0.2), rgba(167, 139, 250, 0.2)); color: #764ba2;">V</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Vitest</h3>
+                <span class="tech-version">v1.0.0</span>
+              </div>
+              <p class="tech-description">
+                Fast unit testing framework powered by Vite. Runs tests in parallel with excellent TypeScript and ESM support.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">Unit Tests</li>
+                <li class="tech-feature">Coverage Reports</li>
+                <li class="tech-feature">70% Threshold</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance & Utilities -->
+      <div class="tech-category">
+        <div class="category-header">
+          <div class="category-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <h2 class="category-title">Performance & Utilities</h2>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(125, 211, 252, 0.2)); color: #22c55e;">S</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Stats.js</h3>
+                <span class="tech-version">v0.17.0</span>
+              </div>
+              <p class="tech-description">
+                Real-time performance monitoring. Displays FPS, frame time, and memory usage for performance optimization.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">FPS Counter</li>
+                <li class="tech-feature">Memory Stats</li>
+                <li class="tech-feature">Performance Debug</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(125, 211, 252, 0.2)); color: #3b82f6;">GL</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">WebGL 2.0</h3>
+                <span class="tech-version">Native</span>
+              </div>
+              <p class="tech-description">
+                Hardware-accelerated graphics rendering. Enables efficient GPU-based particle system rendering for smooth 60 FPS performance.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">GPU Acceleration</li>
+                <li class="tech-feature">Shader Support</li>
+                <li class="tech-feature">Instanced Rendering</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(125, 211, 252, 0.2)); color: #22c55e;">WW</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Web Workers</h3>
+                <span class="tech-version">Native</span>
+              </div>
+              <p class="tech-description">
+                Background audio processing in separate thread. Prevents UI blocking during audio analysis for responsive user experience.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">Non-blocking Processing</li>
+                <li class="tech-feature">Audio Analysis</li>
+                <li class="tech-feature">Performance Optimization</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security & Error Handling -->
+      <div class="tech-category">
+        <div class="category-header">
+          <div class="category-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <h2 class="category-title">Security & Reliability</h2>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(251, 146, 60, 0.2)); color: #ef4444;">CSP</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Content Security Policy</h3>
+                <span class="tech-version">Hardened</span>
+              </div>
+              <p class="tech-description">
+                Strict CSP without unsafe-inline. External scripts and styles only. Enhanced security against XSS attacks.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">No unsafe-inline</li>
+                <li class="tech-feature">Script Nonces</li>
+                <li class="tech-feature">XSS Protection</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-card-content">
+            <div class="tech-logo" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(167, 139, 250, 0.2)); color: #8b5cf6;">ET</div>
+            <div class="tech-info">
+              <div class="tech-card-header">
+                <h3 class="tech-name">Error Tracking</h3>
+                <span class="tech-version">Built-in</span>
+              </div>
+              <p class="tech-description">
+                Comprehensive error tracking with Sentry integration support. Global error boundary with recovery mechanisms.
+              </p>
+              <ul class="tech-features">
+                <li class="tech-feature">Sentry Ready</li>
+                <li class="tech-feature">Error Recovery</li>
+                <li class="tech-feature">Health Monitoring</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="browser-support">
+      <h2 class="category-title" style="margin-bottom: 8px;">Browser Compatibility</h2>
+      <p style="color: var(--muted); margin-bottom: 0;">Tested and optimized for modern browsers</p>
+      <div class="browser-list">
+        <div class="browser-item">
+          <div class="browser-icon" style="background: linear-gradient(135deg, #4285f4, #34a853); color: white;">Ch</div>
+          <div>
+            <div class="browser-name">Chrome</div>
+            <div class="browser-version">90+</div>
+          </div>
+        </div>
+        <div class="browser-item">
+          <div class="browser-icon" style="background: linear-gradient(135deg, #ff7139, #ff9500); color: white;">Fx</div>
+          <div>
+            <div class="browser-name">Firefox</div>
+            <div class="browser-version">90+</div>
+          </div>
+        </div>
+        <div class="browser-item">
+          <div class="browser-icon" style="background: linear-gradient(135deg, #007aff, #5ac8fa); color: white;">Sa</div>
+          <div>
+            <div class="browser-name">Safari</div>
+            <div class="browser-version">14+</div>
+          </div>
+        </div>
+        <div class="browser-item">
+          <div class="browser-icon" style="background: linear-gradient(135deg, #0078d4, #00bcf2); color: white;">Ed</div>
+          <div>
+            <div class="browser-name">Edge</div>
+            <div class="browser-version">90+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
